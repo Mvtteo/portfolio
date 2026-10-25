@@ -1,0 +1,105 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--c-bg);
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--c-bg);
+  color: var(--c-cream);
+  font-family: var(--f-ui);
+  font-size: var(--t-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-signal);
+  outline-offset: 3px;
+}
+
+/* La caméra est téléportée en JS ; on coupe ici les glissements de panneaux et de feuilles. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --d-panel: 1ms;
+    --d-fade: 1ms;
+  }
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* Lien d'évitement : invisible jusqu'au focus clavier. */
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: 12px;
+  z-index: 100;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--c-cream);
+  color: var(--c-bg);
+  font-size: var(--t-ui);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  transform: translateY(-160%);
+  pointer-events: auto;
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Retour visuel à l'appui, sans décaler la mise en page. */
+button:active:not(:disabled),
+a[href]:active {
+  transform: scale(0.98);
+}
