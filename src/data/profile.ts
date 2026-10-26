@@ -62,14 +62,13 @@ export const EDUCATION: { years: string; title: string; school: string }[] = [
 ];
 
 export const CONSULTING = {
-  title: 'Transform your data into actionable insights.',
-  pitch: 'J’accompagne les entreprises dans l’analyse de leurs données, la compréhension de leurs performances digitales et l’automatisation de leurs reportings.',
+  title: 'Social media analytics & automation.',
+  pitch: 'J’accompagne les marques et les agences sur deux sujets : comprendre la performance de leurs réseaux sociaux et automatiser les reportings qui en découlent.',
   offers: [
-    ['Analytics & Performance', 'Performance social media, web analytics, parcours utilisateurs, indicateurs de conversion.'],
-    ['Reporting & Data Visualization', 'Structuration de reportings, tableaux de bord, visualisation des indicateurs clés.'],
-    ['Automation & Data Processing', 'Automatisation de tâches de reporting récurrentes et traitement de données en Python.'],
+    ['Analyse social media', 'Performance des comptes et des publications par plateforme et par marque : impressions, engagement rate, contenus qui portent, comparaison avec la concurrence.'],
+    ['Automation', 'Reportings récurrents automatisés en Python : exports nettoyés, indicateurs calculés, graphiques et PowerPoint générés sans ressaisie.'],
   ] as [string, string][],
-  needs: ['Analytics & Performance', 'Reporting & Dataviz', 'Automation', 'Autre'],
+  needs: ['Analyse social media', 'Automation', 'Les deux', 'Autre'],
 };
 
 /**
