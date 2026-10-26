@@ -112,7 +112,7 @@ const ENTRIES: ProjectEntry[] = [
     description:
       'Application web : on colle les colonnes d’un export social media (marque, plateforme, lien, date, impressions, engagement rate) et elle produit un PowerPoint, une slide par marque. Chaque slide porte un graphique combiné : impressions en barres sur un axe en milliers, engagement rate en courbe sur un axe en %. Sous chaque barre, le logo de la plateforme ouvre la publication. Aperçu en direct, taille des logos réglable, aucune donnée conservée.',
     tech: ['Python', 'FastAPI', 'python-pptx', 'JavaScript', 'Chart.js'],
-    repoUrl: null, demoUrl: null, lastCommit: '2026-10-25',
+    repoUrl: null, demoUrl: 'https://www.mvtteo.fr/powerpoint/', lastCommit: '2026-10-25',
     preview: '/projects/quick-timeseries.jpg',
   },
   {
