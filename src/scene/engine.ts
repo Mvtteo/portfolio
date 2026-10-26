@@ -9,10 +9,8 @@ import type { Filter } from '../data/projects';
  * Valeurs : data-orbit-handover/tokens.css (commentaire final) et Systeme.dc.html §04.
  */
 
-/** Centre de la vue générale : barycentre des secteurs affichés (reste juste si le tri des projets change). */
-const CENTER = ACTIVE_SECTORS.reduce((a, s) => [a[0] + s.center[0], a[1] + s.center[1], a[2] + s.center[2]], [0, 0, 0]).map(
-  (v) => v / Math.max(1, ACTIVE_SECTORS.length),
-);
+/** Trou noir central, en unités de monde : rayon de l'ombre, bords interne et externe du disque d'accrétion. */
+export const BH = { shadow: 20, diskIn: 36, diskOut: 110 };
 
 export interface CamState {
   tx: number;
@@ -44,7 +42,7 @@ export interface EngineConfig {
 
 export const DESKTOP: EngineConfig = {
   mobile: false,
-  home: { tx: CENTER[0], ty: CENTER[1] + 10, tz: CENTER[2], dist: 700, pitch: 0.34, offX: 150, offY: 0 },
+  home: { tx: 0, ty: 0, tz: 0, dist: 850, pitch: 0.26, offX: 130, offY: 0 },
   minDist: 110,
   maxDist: 1100,
   target: { dist: 150, pitch: 0.2, offX: -220, offY: 0 },
@@ -57,7 +55,7 @@ export const DESKTOP: EngineConfig = {
 
 export const MOBILE: EngineConfig = {
   mobile: true,
-  home: { tx: CENTER[0], ty: CENTER[1] + 10, tz: CENTER[2], dist: 1000, pitch: 0.42, offX: 0, offY: 40 },
+  home: { tx: 0, ty: 0, tz: 0, dist: 1200, pitch: 0.34, offX: 0, offY: 40 },
   minDist: 140,
   maxDist: 1300,
   target: { dist: 190, pitch: 0.25, offX: 0, offY: -150 },
@@ -179,9 +177,9 @@ export class OrbitEngine {
     this.retarget({ tx: x, ty: y, tz: z, dist: s.dist, pitch: s.pitch, offX: panelOpen ? this.cfg.target.offX : this.cfg.home.offX, offY: s.offY });
   }
 
-  /** Noyau : profil. */
+  /** Noyau : profil. Vue rasante pour lire l'image lentillée du disque. */
   flyCore() {
-    this.retarget({ tx: 0, ty: 0, tz: 0, dist: 300, offX: this.cfg.target.offX });
+    this.retarget({ tx: 0, ty: 0, tz: 0, dist: 300, pitch: 0.14, offX: this.cfg.target.offX });
   }
 
   setOffset(offX: number, offY = this.goal.offY) {
@@ -306,8 +304,9 @@ export class OrbitEngine {
     });
     const core = this.toScreen(0, 0, 0, camera);
     if (core) {
-      const r = 26 * core.k * 0.9 + (mobile ? 5 : 6);
-      Object.assign(this.core, { x: core.x, y: core.y, k: core.k, visible: true, r: mobile ? Math.max(24, r) : Math.max(18, r * 0.8) });
+      // Zone de clic : ombre + image lentillée (1,8 rs), jamais sous la cible minimale.
+      const rs = BH.shadow * core.k;
+      Object.assign(this.core, { x: core.x, y: core.y, k: core.k, visible: true, r: Math.max(mobile ? 24 : 22, rs * 1.8) });
     } else this.core.visible = false;
     this.sectorScreen = ACTIVE_SECTORS.map((s) => this.toScreen(s.center[0], s.center[1] + 60, s.center[2], camera));
   }
@@ -326,7 +325,7 @@ export class OrbitEngine {
       const half = this.cfg.mobile ? 28 : 32;
       place(o.reticle, s.x - half, s.y - half, s.visible);
     }
-    if (o.core) place(o.core, this.core.x, this.core.y + this.core.r * (this.cfg.mobile ? 0.5 : 0.875) + 18, this.core.visible);
+    if (o.core) place(o.core, this.core.x, this.core.y + Math.max(BH.shadow * this.core.k * 2.2, 30) + 14, this.core.visible);
     ACTIVE_SECTORS.forEach((s, i) => {
       const q = this.sectorScreen[i];
       place(o.sectors[s.key], q?.x ?? 0, q?.y ?? 0, !!q);

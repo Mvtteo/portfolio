@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 
 /*
- * Étoiles décoratives : une seule géométrie, un seul matériau. Graine 42, 60 % disque aplati,
- * 40 % coquille lointaine ; 87 % crème, 7 % rouge clair, 6 % atténué (tokens.css).
+ * Étoiles décoratives : une seule géométrie, un seul matériau, graine 42.
+ * Galaxie spirale à deux bras logarithmiques (60 %), bulbe chaud autour du trou noir (10 %),
+ * coquille lointaine (30 %). Couleurs : crème, pêche, gris, ambre pâle (bulbe), bleu pâle (bras).
  * Taille en px = clamp(taille · focale / profondeur · échelle) comme dans le prototype.
  */
 
@@ -14,7 +15,12 @@ function rng(seed: number) {
   };
 }
 
-const COLORS = [new THREE.Color('#FEF8F1'), new THREE.Color('#F08A72'), new THREE.Color('#A8A3A0')];
+const CREAM = 0;
+const PEACH = 1;
+const MUTED = 2;
+const AMBER = 3;
+const BLUE = 4;
+const COLORS = ['#FEF8F1', '#FFC89A', '#A8A3A0', '#FFD9B0', '#CFDDFF'].map((c) => new THREE.Color(c));
 
 export function buildStarGeometry(count: number) {
   const r = rng(42);
@@ -23,25 +29,39 @@ export function buildStarGeometry(count: number) {
   const size = new Float32Array(count);
   const alpha = new Float32Array(count);
   for (let k = 0; k < count; k++) {
-    if (k % 5 < 3) {
-      const a = r() * Math.PI * 2;
-      const d = 60 + Math.pow(r(), 0.7) * 560;
+    const m = k % 10;
+    let c = CREAM;
+    if (m < 6) {
+      // Bras : r = 150·e^(a/2,1), dispersion qui se resserre vers l'extérieur.
+      const arm = k % 2;
+      const t = Math.pow(r(), 0.85);
+      const d = 150 + t * 560;
+      const a = Math.log(d / 150) * 2.1 + arm * Math.PI + (r() - 0.5) * (0.7 - t * 0.3);
       pos[k * 3] = Math.cos(a) * d;
-      pos[k * 3 + 2] = Math.sin(a) * d * 0.85;
-      pos[k * 3 + 1] = (r() + r() + r() - 1.5) * 46;
+      pos[k * 3 + 2] = Math.sin(a) * d;
+      pos[k * 3 + 1] = (r() + r() + r() - 1.5) * (14 + t * 26);
+      const u = r();
+      c = u < 0.1 ? BLUE : u < 0.16 ? PEACH : d < 260 && u < 0.45 ? AMBER : CREAM;
+    } else if (m < 7) {
+      const a = r() * Math.PI * 2;
+      const d = 140 + r() * 90;
+      pos[k * 3] = Math.cos(a) * d;
+      pos[k * 3 + 2] = Math.sin(a) * d;
+      pos[k * 3 + 1] = (r() - 0.5) * 50;
+      c = r() < 0.6 ? AMBER : CREAM;
     } else {
       const u = r() * 2 - 1;
       const a = r() * Math.PI * 2;
-      const d = 800 + r() * 900;
+      const d = 900 + r() * 900;
       const q = Math.sqrt(1 - u * u);
       pos[k * 3] = q * Math.cos(a) * d;
       pos[k * 3 + 1] = u * d;
       pos[k * 3 + 2] = q * Math.sin(a) * d;
+      c = r() < 0.1 ? MUTED : CREAM;
     }
     size[k] = 0.5 + Math.pow(r(), 3) * 2.2;
     alpha[k] = 0.25 + r() * 0.7;
-    const c = r();
-    COLORS[c < 0.07 ? 1 : c < 0.13 ? 2 : 0].toArray(col, k * 3);
+    COLORS[c].toArray(col, k * 3);
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));

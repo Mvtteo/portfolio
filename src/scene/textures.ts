@@ -1,15 +1,14 @@
 import * as THREE from 'three';
-import type { Mark } from '../data/sectors';
 
-/* Textures dessinées une fois sur canvas, en blanc : la couleur vient du matériau. */
+/* Textures dessinées une fois sur canvas, en blanc sauf mention : la couleur vient du matériau. */
 
 const SIZE = 128;
 
-function make(draw: (ctx: CanvasRenderingContext2D, s: number) => void) {
+function make(draw: (ctx: CanvasRenderingContext2D, s: number) => void, size = SIZE) {
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = SIZE;
+  canvas.width = canvas.height = size;
   const ctx = canvas.getContext('2d')!;
-  draw(ctx, SIZE);
+  draw(ctx, size);
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
@@ -34,38 +33,101 @@ export function discTexture() {
   });
 }
 
-/** Contour de marque. La forme occupe ~90 % de la texture ; `width` en px de texture. */
-export function markTexture(mark: Mark | 'ring', width: number) {
-  return make((ctx, s) => {
-    const c = s / 2;
-    const m = s / 2 - width;
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = width;
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    if (mark === 'circle' || mark === 'ring') ctx.arc(c, c, m, 0, Math.PI * 2);
-    else if (mark === 'square') ctx.rect(c - m * 0.85, c - m * 0.85, m * 1.7, m * 1.7);
-    else if (mark === 'diamond') {
-      ctx.moveTo(c, c - m);
-      ctx.lineTo(c + m, c);
-      ctx.lineTo(c, c + m);
-      ctx.lineTo(c - m, c);
-      ctx.closePath();
-    } else if (mark === 'hexagon') {
-      for (let i = 0; i < 6; i++) {
-        const a = -Math.PI / 2 + (i * Math.PI) / 3;
-        const x = c + Math.cos(a) * m;
-        const y = c + Math.sin(a) * m;
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-    } else {
-      ctx.moveTo(c, c - m);
-      ctx.lineTo(c + m * 0.95, c + m * 0.65);
-      ctx.lineTo(c - m * 0.95, c + m * 0.65);
-      ctx.closePath();
-    }
-    ctx.stroke();
+/** Trait fin qui s'éteint vers les extrémités, centré ; `gap` = part vide au centre (0–1). */
+function streak(ctx: CanvasRenderingContext2D, s: number, angle: number, width: number, gap = 0) {
+  const h = s / 2;
+  ctx.save();
+  ctx.translate(h, h);
+  ctx.rotate(angle);
+  [-1, 1].forEach((dir) => {
+    const g = ctx.createLinearGradient(0, dir * gap * h, 0, dir * h);
+    g.addColorStop(0, 'rgba(255,255,255,1)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(-width / 2, Math.min(dir * gap * h, dir * h), width, h * (1 - gap));
   });
+  ctx.restore();
+}
+
+/** Aigrettes de diffraction (étoiles chaudes de classe A) : croix fine. */
+export function spikesTexture() {
+  return make(
+    (ctx, s) => {
+      streak(ctx, s, 0, 2);
+      streak(ctx, s, Math.PI / 2, 2);
+    },
+    256,
+  );
+}
+
+/** Faisceaux d'un pulsar : deux cônes opposés, très fins près de l'étoile. */
+export function beamTexture() {
+  return make(
+    (ctx, s) => {
+      const c = s / 2;
+      [-1, 1].forEach((dir) => {
+        const g = ctx.createLinearGradient(c, c, c, c + dir * c);
+        g.addColorStop(0, 'rgba(255,255,255,.95)');
+        g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(c - 1, c);
+        ctx.lineTo(c - 7, c + dir * c);
+        ctx.lineTo(c + 7, c + dir * c);
+        ctx.lineTo(c + 1, c);
+        ctx.closePath();
+        ctx.fill();
+      });
+    },
+    256,
+  );
+}
+
+/** Jets bipolaires d'une proto-étoile : deux traits verticaux, vides au centre (cocon). */
+export function jetsTexture() {
+  return make((ctx, s) => streak(ctx, s, 0, 1.6, 0.26));
+}
+
+/** Contour circulaire (orbite, cible). */
+export function ringTexture(width: number) {
+  return make(
+    (ctx, s) => {
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.arc(s / 2, s / 2, s / 2 - width, 0, Math.PI * 2);
+      ctx.stroke();
+    },
+    256,
+  );
+}
+
+/*
+ * Image lentillée du disque autour de l'ombre (couleurs réelles, pas de teinte de matériau) :
+ * anneau lumineux serré contre l'ombre (r = 1 → 1,85 rs) + anneau de photons fin à 1,03 rs.
+ * La texture couvre 2 rs de rayon.
+ */
+export function lensTexture() {
+  return make(
+    (ctx, s) => {
+      const c = s / 2;
+      const rs = c / 2;
+      const g = ctx.createRadialGradient(c, c, rs, c, c, rs * 1.85);
+      g.addColorStop(0, 'rgba(255,250,240,.95)');
+      g.addColorStop(0.12, 'rgba(255,226,194,.7)');
+      g.addColorStop(0.45, 'rgba(245,168,110,.28)');
+      g.addColorStop(1, 'rgba(196,86,46,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(c, c, rs * 1.85, 0, Math.PI * 2);
+      ctx.arc(c, c, rs, 0, Math.PI * 2, true);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,248,236,.9)';
+      ctx.lineWidth = Math.max(1.5, rs * 0.035);
+      ctx.beginPath();
+      ctx.arc(c, c, rs * 1.03, 0, Math.PI * 2);
+      ctx.stroke();
+    },
+    512,
+  );
 }

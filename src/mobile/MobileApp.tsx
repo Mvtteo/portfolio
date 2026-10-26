@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { PROFILE, type SectionKey } from '../data/profile';
 import { ACTIVE_SECTORS, N, neighbours, PROJECTS, SECTOR_COUNTS, type Filter } from '../data/projects';
 import { SECTOR_BY_KEY } from '../data/sectors';
-import { Chevron, CloseIcon, MarkIcon, MenuIcon, SearchIcon, TargetIcon } from '../hud/Icons';
+import { Chevron, CloseIcon, MenuIcon, SearchIcon, StarIcon, TargetIcon } from '../hud/Icons';
 import h from '../hud/hud.module.css';
 import { ProjectBody } from '../hud/ProjectBody';
 import { ProjectList } from '../hud/ProjectList';
@@ -172,7 +172,7 @@ export function MobileApp() {
   else if (filter !== 'all') status = `SECTEUR · ${SECTOR_BY_KEY[filter].label}`;
 
   const modal = view === 'liste' || view === 'menu';
-  const chips = [['all', 'TOUS', 'all', N] as const, ...ACTIVE_SECTORS.map((x) => [x.key, x.label, x.mark, SECTOR_COUNTS[x.key]] as const)];
+  const chips = [['all', 'TOUS', 'all', N] as const, ...ACTIVE_SECTORS.map((x) => [x.key, x.label, x.star, SECTOR_COUNTS[x.key]] as const)];
 
   return (
     <div className={s.root}>
@@ -217,7 +217,7 @@ export function MobileApp() {
             <div role="group" aria-label="Secteurs" className={s.chips}>
               {chips.map(([key, label, mark, count]) => (
                 <button key={key} type="button" className={s.chip} aria-pressed={filter === key} onClick={() => flySector(key)}>
-                  <MarkIcon mark={mark} size={10} width={1.6} />
+                  <StarIcon kind={mark} size={13} />
                   {label} <span className={s.chipCount}>{count}</span>
                 </button>
               ))}
@@ -250,7 +250,7 @@ export function MobileApp() {
         <div aria-hidden="true" className={s.grip} />
         <div className={s.sheetHead}>
           <span className={s.sheetKicker}>
-            <MarkIcon mark={SECTOR_BY_KEY[cur.sector].mark} size={10} color="var(--c-signal)" width={1.6} />
+            <StarIcon kind={SECTOR_BY_KEY[cur.sector].star} size={13} />
             SYSTÈME {cur.sys} · {SECTOR_BY_KEY[cur.sector].label}
           </span>
           <button type="button" className={h.round} style={{ width: 44, height: 44 }} aria-label="Fermer la fiche" onClick={closeAll}>

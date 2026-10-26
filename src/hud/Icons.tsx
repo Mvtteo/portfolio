@@ -1,9 +1,36 @@
-import { MARK_PATHS, type Mark } from '../data/sectors';
+import { STAR_TYPES, type StarClass } from '../data/sectors';
 
-export function MarkIcon({ mark, size = 12, color = 'currentColor', width = 1.5 }: { mark: Mark | 'all'; size?: number; color?: string; width?: number }) {
+/*
+ * Icône d'objet stellaire (HUD) : reprend la forme de l'objet dans la scène, donc le type se lit
+ * sans la couleur. 'all' = trou noir central (ombre, anneau de photons, disque).
+ */
+export function StarIcon({ kind, size = 14 }: { kind: StarClass | 'all'; size?: number }) {
+  if (kind === 'all') {
+    return (
+      <svg aria-hidden="true" width={size} height={size} viewBox="0 0 16 16" style={{ flex: 'none' }}>
+        <ellipse cx="8" cy="8" rx="7.4" ry="2.1" fill="none" stroke="#F5A86E" strokeWidth="1.1" />
+        <circle cx="8" cy="8" r="3.6" fill="#FFE2C2" opacity=".35" />
+        <circle cx="8" cy="8" r="2.7" fill="#020203" stroke="#FFF8EC" strokeWidth=".8" />
+        <path d="M2.4 8.9Q8 10.6 13.6 8.9" fill="none" stroke="#FFE2C2" strokeWidth="1.1" />
+      </svg>
+    );
+  }
+  const t = STAR_TYPES[kind];
   return (
-    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 12 12" style={{ flex: 'none' }}>
-      <path d={MARK_PATHS[mark]} fill="none" stroke={color} strokeWidth={width} />
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 16 16" style={{ flex: 'none' }}>
+      <circle cx="8" cy="8" r="7" fill={t.halo} opacity=".14" />
+      {kind === 'cepheid' && <circle cx="8" cy="8" r="6.2" fill="none" stroke={t.halo} strokeWidth=".9" strokeDasharray="1.6 1.4" />}
+      <circle cx="8" cy="8" r={kind === 'binary' ? 3.4 : 4} fill={t.halo} opacity=".32" />
+      {kind === 'A' && <path d="M8 .6V15.4M.6 8H15.4" stroke={t.halo} strokeWidth=".8" />}
+      {kind === 'pulsar' && <path d="M8 8L2.2 1.4L3.6 1L8 8L12.4 15L13.8 14.6z" fill={t.halo} opacity=".85" />}
+      {kind === 'binary' ? (
+        <>
+          <circle cx="6.6" cy="8.6" r="2.2" fill={t.core} />
+          <circle cx="12" cy="5.4" r="1.4" fill="#FFE0C8" />
+        </>
+      ) : (
+        <circle cx="8" cy="8" r={kind === 'pulsar' ? 1.6 : 2} fill={t.core} />
+      )}
     </svg>
   );
 }

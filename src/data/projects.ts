@@ -1,4 +1,4 @@
-import { SECTORS, SECTOR_BY_KEY, type SectorKey } from './sectors';
+import { SECTORS, SECTOR_BY_KEY, STAR_TYPES, type SectorKey } from './sectors';
 
 export type Priority = 'featured' | 'secondary' | 'archive';
 
@@ -338,6 +338,14 @@ export const SECTOR_COUNTS = Object.fromEntries(SECTORS.map((s) => [s.key, PROJE
 export const ACTIVE_SECTORS = SECTORS.filter((s) => SECTOR_COUNTS[s.key] > 0);
 
 export type Filter = SectorKey | 'all';
+
+/** Ni dépôt ni démo publics : affiché en proto-étoile (cocon + jets). */
+export const isProtostar = (p: ProjectEntry) => !p.repoUrl && !p.demoUrl;
+
+/** Type d'objet stellaire et couleur d'accent du projet (= celles de son secteur). */
+export function starOf(p: ProjectEntry) {
+  return STAR_TYPES[SECTOR_BY_KEY[p.sector].star];
+}
 
 const MONTHS = ['JANV.', 'FÉV.', 'MARS', 'AVR.', 'MAI', 'JUIN', 'JUIL.', 'AOÛT', 'SEPT.', 'OCT.', 'NOV.', 'DÉC.'];
 

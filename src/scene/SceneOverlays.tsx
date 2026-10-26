@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { ACTIVE_SECTORS, PROJECTS, SECTOR_COUNTS } from '../data/projects';
 import { SECTOR_BY_KEY, type SectorKey } from '../data/sectors';
+import { isProtostar } from '../data/projects';
 import type { Hit, OrbitEngine } from './engine';
 import s from './scene.module.css';
 
@@ -40,7 +41,7 @@ export function SceneOverlays({ engine, hovered, selected, counts = true, filter
           }}
           className={s.sectorLabel}
           data-dim={filter !== 'all' && filter !== sec.key}
-          style={{ visibility: 'hidden' }}
+          style={{ visibility: 'hidden', color: sec.color }}
         >
           {counts ? `${sec.label} · ${SECTOR_COUNTS[sec.key]}` : sec.label}
         </span>
@@ -50,12 +51,14 @@ export function SceneOverlays({ engine, hovered, selected, counts = true, filter
       </span>
       <div ref={reticleRef} className={s.reticle} style={{ visibility: 'hidden' }} hidden={selected == null}>
         <svg viewBox="0 0 64 64" width="100%" height="100%">
-          <path d="M2 16V2H16M48 2H62V16M62 48V62H48M16 62H2V48" fill="none" stroke="#D9442F" strokeWidth="2" />
-          {!engine.cfg.mobile && <circle cx="32" cy="32" r="20" fill="none" stroke="#D9442F" strokeWidth="1" strokeDasharray="2 5" opacity=".8" />}
+          <path d="M2 16V2H16M48 2H62V16M62 48V62H48M16 62H2V48" fill="none" stroke="#F29A5C" strokeWidth="2" />
+          {!engine.cfg.mobile && <circle cx="32" cy="32" r="20" fill="none" stroke="#F29A5C" strokeWidth="1" strokeDasharray="2 5" opacity=".8" />}
         </svg>
       </div>
       <div ref={labelRef} className={s.hoverLabel} style={{ visibility: 'hidden' }} hidden={!showLabel}>
-        <span className={s.hoverKicker}>{hovP ? `${hovP.sys} • ${SECTOR_BY_KEY[hovP.sector].label}` : 'NOYAU'}</span>
+        <span className={s.hoverKicker} style={hovP ? { color: SECTOR_BY_KEY[hovP.sector].color } : undefined}>
+          {hovP ? `${hovP.sys} • ${SECTOR_BY_KEY[hovP.sector].label}${isProtostar(hovP) ? ' · PROTO-ÉTOILE' : ''}` : 'NOYAU · TROU NOIR'}
+        </span>
         <span className={s.hoverTitle}>{hovP ? hovP.title : 'Mattéo Berthelot — profil'}</span>
         <span className={s.hoverHint}>{hovP ? 'CLIC POUR CIBLER' : 'CLIC POUR OUVRIR'}</span>
       </div>

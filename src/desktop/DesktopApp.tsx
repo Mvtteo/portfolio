@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { KICKERS, NAV, PROFILE, type SectionKey } from '../data/profile';
 import { ACTIVE_SECTORS, N, neighbours, PROJECTS, SECTOR_COUNTS, type Filter } from '../data/projects';
 import { SECTOR_BY_KEY } from '../data/sectors';
-import { Chevron, CloseIcon, MarkIcon, TargetIcon } from '../hud/Icons';
+import { Chevron, CloseIcon, StarIcon, TargetIcon } from '../hud/Icons';
 import h from '../hud/hud.module.css';
 import { ProjectBody } from '../hud/ProjectBody';
 import { ProjectList } from '../hud/ProjectList';
@@ -297,12 +297,14 @@ export function DesktopApp() {
             <h2 id="sectors-title" className={s.sectorsTitle}>
               SECTEURS
             </h2>
-            {[['all', 'TOUS LES SYSTÈMES', 'all', N] as const, ...ACTIVE_SECTORS.map((x) => [x.key, x.name.toUpperCase(), x.mark, SECTOR_COUNTS[x.key]] as const)].map(
+            {[['all', 'TOUS LES SYSTÈMES', 'all', N] as const, ...ACTIVE_SECTORS.map((x) => [x.key, x.name.toUpperCase(), x.star, SECTOR_COUNTS[x.key]] as const)].map(
               ([key, label, mark, count]) => (
                 <button key={key} type="button" className={s.sectorRow} aria-pressed={filter === key} onClick={() => flySector(key)}>
-                  <MarkIcon mark={mark} color={filter === key ? 'var(--c-signal)' : 'var(--c-cream)'} />
+                  <StarIcon kind={mark} size={16} />
                   <span className={s.sectorName}>{label}</span>
-                  <span className={s.sectorCount}>{count}</span>
+                  <span className={s.sectorCount} style={{ color: key === 'all' ? 'var(--c-action)' : SECTOR_BY_KEY[key].color }}>
+                    {count}
+                  </span>
                 </button>
               ),
             )}
@@ -397,7 +399,7 @@ export function DesktopApp() {
           <>
             <div className={s.panelHead}>
               <span className={s.panelKicker}>
-                <MarkIcon mark={SECTOR_BY_KEY[shownP.sector].mark} size={11} color="var(--c-signal)" width={1.6} />
+                <StarIcon kind={SECTOR_BY_KEY[shownP.sector].star} />
                 SYSTÈME {shownP.sys} · {SECTOR_BY_KEY[shownP.sector].label}
               </span>
               <button type="button" className={s.back} onClick={closePanel}>

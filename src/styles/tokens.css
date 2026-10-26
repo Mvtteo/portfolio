@@ -1,28 +1,30 @@
 /* Design tokens — DATA ORBIT (v3). Remplacent la palette orange et la typo Inter/Geist du brief. */
 :root {
-  /* Palette de base (validée) */
-  --c-bg: #1E1E24;          /* Anthracite — espace, fond plein cadre (clear color du renderer) */
-  --c-red: #862217;         /* Rouge — fonds d'action : CTA, puce de statut, filtres actifs */
-  --c-cream: #FEF8F1;       /* Crème — texte, traits, étoiles */
+  /* Palette dérivée de la scène 3D : le fond est l'espace, les accents sont la lumière du disque d'accrétion. */
+  --c-bg: #0E0E12;          /* Espace — fond plein cadre (clear color du renderer) */
+  --c-action: #F5A86E;      /* Disque d'accrétion — fonds d'action : CTA, filtre actif ; texte --c-on-action (9,8:1) */
+  --c-on-action: #0E0E12;
+  --c-cream: #FEF8F1;       /* Crème — texte, traits, étoiles (18:1) */
+  --c-red: #862217;         /* Rouge de marque — nébuleuses seulement, jamais en fond de texte */
 
   /* Tons dérivés */
-  --c-surface: #27272E;     /* panneaux HUD, utilisé à 90 % : rgba(39,39,46,.9) */
+  --c-surface: #1E1E24;     /* panneaux HUD, utilisé à 80–96 % : rgba(28,28,34,.9) */
   --c-surface-2: #303038;   /* ligne active / survolée */
   --c-line: #3A3A43;        /* filets 1px */
-  --c-muted: #A8A3A0;       /* texte secondaire — 6,7:1 */
-  --c-signal: #D9442F;      /* cible, halo, réticule, contour actif — jamais du texte courant (3,8:1) */
-  --c-red-light: #F08A72;   /* métadonnées mono en rouge, particules — 6,8:1 */
+  --c-muted: #A8A3A0;       /* texte secondaire — 7,9:1 */
+  --c-signal: #F29A5C;      /* cible, réticule, contour actif, focus — 8,6:1 */
+  --c-peach: #FFC89A;       /* métadonnées mono, particules — 12:1 */
   --c-disabled: #6E6A6A;    /* bordure pointillée : ressource absente (CV, démo) */
   --c-hud-border: rgba(254, 248, 241, .16);
 
-  /* Interdit : texte --c-red sur --c-bg (1,8:1) */
+  /* Accent par projet / secteur = couleur du halo de son étoile (sectors.ts → STAR_TYPES), posé en --accent. */
 
   /* Typographie (Google Fonts) */
   --f-display: 'Unbounded', system-ui, sans-serif;      /* 600/700 — logo, nom, titres de système et de section */
   --f-ui: 'Manrope', system-ui, sans-serif;             /* 400–800 — texte HUD, boutons, navigation */
   --f-mono: 'JetBrains Mono', ui-monospace, monospace;  /* 500/700 — identifiants système, secteurs, statut, coordonnées */
 
-  --t-logo: 19px;          /* Unbounded 700, +0.14em ; sous-titre mono 9.5px +0.46em rouge clair */
+  --t-logo: 19px;          /* Unbounded 700, +0.14em ; sous-titre mono 9.5px +0.46em pêche */
   --t-name: 32px;          /* Unbounded 600, lh 1.05 — mobile 24px */
   --t-system-title: 30px;  /* Unbounded 600, lh 1.08 — mobile 24px */
   --t-section-title: 28px; /* Unbounded 600 */
@@ -40,8 +42,8 @@
   --hit-min: 40px;         /* desktop ; 44px mobile */
 
   /* Lumière */
-  --glow-cta: 0 0 22px rgba(217, 68, 47, .35);
-  --glow-signal: drop-shadow(0 0 6px rgba(217, 68, 47, .9));
+  --glow-cta: 0 0 22px rgba(242, 154, 92, .35);
+  --glow-signal: drop-shadow(0 0 6px rgba(242, 154, 92, .8));
   --shadow-panel: 0 20px 60px rgba(0, 0, 0, .45);
 
   /* Motion */
@@ -50,10 +52,4 @@
   --d-fade: 240ms;
 }
 
-/* Paramètres de scène (à reporter dans la config TS de la scène, pas en CSS)
-   Étoiles décoratives : 1600 desktop / 900 mobile, graine 42, couleurs 87% crème / 7% #F08A72 / 6% #A8A3A0
-   Nébuleuses : rgba(134,34,23,.22) et rgba(168,163,160,.22) max, 3–4 nappes
-   Secteurs : data (-175,10,-30) · web (175,-15,45) · archives (20,115,-200) ; anneau r=95 ; projets sur anneau r=72
-   Caméra : vue générale dist 640 pitch .34 (mobile 820/.42) · secteur 330 · cible 150 pitch .2
-            limites dist 110–1100, pitch −0.2–1.2 · lissage 1 − e^(−2.4·dt) · dérive 0.035 rad/s après 5 s
-   Décalage du centre de vue quand un panneau est ouvert : desktop −220px en X, mobile −150px en Y */
+/* Paramètres de scène : dans le code (engine.ts BH, DESKTOP/MOBILE ; sectors.ts ; starfield.ts ; blackHole.ts). */

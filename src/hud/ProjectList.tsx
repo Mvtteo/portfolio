@@ -1,6 +1,6 @@
 import { matchesQuery, PROJECTS, techLine, type Filter } from '../data/projects';
 import { SECTORS } from '../data/sectors';
-import { MarkIcon } from './Icons';
+import { StarIcon } from './Icons';
 import h from './hud.module.css';
 
 interface Props {
@@ -26,7 +26,7 @@ export function ProjectList({ query, filter, active, onPick, onHover }: Props) {
       {groups.map(({ s, items }) => (
         <section key={s.key} aria-label={s.name} style={{ display: 'flex', flexDirection: 'column', paddingTop: 10 }}>
           <h3 className={h.groupLabel} style={{ margin: 0 }}>
-            <MarkIcon mark={s.mark} size={10} color="var(--c-muted)" />
+            <StarIcon kind={s.star} size={14} />
             {s.name.toUpperCase()}
           </h3>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -42,7 +42,9 @@ export function ProjectList({ query, filter, active, onPick, onHover }: Props) {
                   onFocus={onHover && (() => onHover(p.index))}
                   onBlur={onHover && (() => onHover(null))}
                 >
-                  <span className={h.rowSys}>{p.sys}</span>
+                  <span className={h.rowSys} style={{ color: s.color }}>
+                    {p.sys}
+                  </span>
                   <span className={h.rowText}>
                     <span className={h.rowTitle}>{p.title}</span>
                     <span className={h.rowMeta}>

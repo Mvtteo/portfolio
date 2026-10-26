@@ -32,12 +32,14 @@
 }
 
 .sectorLabel {
-  color: rgba(168, 163, 160, 0.9);
-  transition: color var(--d-fade) ease;
+  /* Couleur posée en ligne : celle de l'étoile du secteur. */
+  color: var(--c-muted);
+  opacity: 0.85;
+  transition: opacity var(--d-fade) ease;
 }
 
 .sectorLabel[data-dim='true'] {
-  color: rgba(168, 163, 160, 0.35);
+  opacity: 0.3;
 }
 
 .coreLabel {
@@ -62,7 +64,7 @@
   padding: 10px 14px 11px;
   border: 1px solid rgba(254, 248, 241, 0.28);
   border-radius: 12px;
-  background: rgba(30, 30, 36, 0.82);
+  background: rgba(14, 14, 18, 0.82);
   white-space: nowrap;
 }
 
@@ -71,7 +73,7 @@
   font-size: var(--t-meta);
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: var(--c-red-light);
+  color: var(--c-peach);
 }
 
 .hoverTitle {

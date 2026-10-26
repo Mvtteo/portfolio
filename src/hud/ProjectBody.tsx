@@ -1,7 +1,7 @@
-import type { Ref } from 'react';
-import { linkNote, metaOf, techLine, type Project } from '../data/projects';
-import { SECTOR_BY_KEY } from '../data/sectors';
-import { MarkIcon } from './Icons';
+import type { CSSProperties, Ref } from 'react';
+import { isProtostar, linkNote, metaOf, starOf, techLine, type Project } from '../data/projects';
+import { PROTOSTAR_NAME, SECTOR_BY_KEY } from '../data/sectors';
+import { StarIcon } from './Icons';
 import h from './hud.module.css';
 
 interface Props {
@@ -14,10 +14,10 @@ interface Props {
 /** Contenu d'une fiche : statut, titre, description, aperçu, métadonnées, liens vérifiés seulement. */
 export function ProjectBody({ p, titleRef, preview = true }: Props) {
   const [metaLabel, metaValue] = metaOf(p);
-  const mark = SECTOR_BY_KEY[p.sector].mark;
+  const star = SECTOR_BY_KEY[p.sector].star;
   return (
     <>
-      <div className={h.chips}>
+      <div className={h.chips} style={{ '--accent': starOf(p).halo } as CSSProperties}>
         <span className={p.statusVerified ? h.chip : h.chipDashed}>{p.status.toUpperCase()}</span>
         {p.note && <span className={h.chipDashed}>{p.note.toUpperCase()}</span>}
       </div>
@@ -33,13 +33,17 @@ export function ProjectBody({ p, titleRef, preview = true }: Props) {
         ) : (
           <div role="img" aria-label="Aperçu non disponible" className={h.preview}>
             <div aria-hidden="true" className={h.previewGlow} />
-            <MarkIcon mark={mark} size={44} color="var(--c-cream)" width={0.8} />
+            <StarIcon kind={star} size={56} />
             <span className={h.previewNote}>{p.repoUrl ? 'APERÇU À GÉNÉRER DEPUIS LE DÉPÔT' : 'AUCUN APERÇU DISPONIBLE'}</span>
           </div>
         ))}
       <dl className={h.metaGrid}>
         <div>
-          <dt>TECHNOLOGIES</dt>
+          <dt>OBJET</dt>
+          <dd>{(isProtostar(p) ? PROTOSTAR_NAME : starOf(p).name).toUpperCase()}</dd>
+        </div>
+        <div>
+          <dt>TECHNOLOGIES · PLANÈTES</dt>
           <dd>{techLine(p)}</dd>
         </div>
         <div>
