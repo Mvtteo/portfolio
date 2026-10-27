@@ -659,8 +659,12 @@
 /* ---------- Hauteurs réduites ---------- */
 
 @media (max-height: 860px) {
+  .crumbs {
+    top: 86px;
+  }
+
   .left {
-    top: 100px;
+    top: 150px;
     gap: 20px;
   }
 

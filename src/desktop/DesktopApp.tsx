@@ -15,6 +15,7 @@ import { SceneLayer } from '../scene/SceneLayer';
 import { webglAvailable } from '../scene/webgl';
 import { SceneOverlays } from '../scene/SceneOverlays';
 import { PORTALS, universeLabel } from '../scene/portals';
+import { THEMES } from '../scene/themes';
 import { WarpOverlay } from '../scene/WarpOverlay';
 import { Search } from './Search';
 import s from './desktop.module.css';
@@ -220,8 +221,8 @@ export function DesktopApp() {
   const portalsHere = PORTALS.filter((p) => p.from === universe).length;
   let status =
     universe === 'hub'
-      ? `NOYAU · ${portalsHere} PORTAILS · ${N} SYSTÈMES`
-      : `UNIVERS ${SECTOR_BY_KEY[universe].label} · ${SECTOR_COUNTS[universe]} SYSTÈMES · ${portalsHere} PORTAILS`;
+      ? `NOYAU · ${portalsHere} PORTES · ${N} SYSTÈMES`
+      : `UNIVERS ${SECTOR_BY_KEY[universe].label} · ${THEMES[universe].place.toUpperCase()} · ${SECTOR_COUNTS[universe]} SYSTÈMES · ${portalsHere} PORTES`;
   if (warping) status = `SAUT EN DISTORSION → ${universeLabel(universe)}`;
   else if (cur) status = `${travelling ? 'EN ROUTE VERS' : 'CIBLE ·'} ${cur.sys} ${cur.title.toUpperCase()}`;
   else if (section) status = `PANNEAU · ${section.toUpperCase()}`;

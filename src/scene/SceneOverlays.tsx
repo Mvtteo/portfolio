@@ -4,6 +4,7 @@ import { SECTOR_BY_KEY, type SectorKey } from '../data/sectors';
 import { isProtostar } from '../data/projects';
 import { portalIndex, type Hit, type OrbitEngine } from './engine';
 import { PORTALS, universeName } from './portals';
+import { THEMES } from './themes';
 import s from './scene.module.css';
 
 interface Props {
@@ -35,7 +36,7 @@ export function SceneOverlays({ engine, hovered, selected, counts = true }: Prop
   const kicker = hovP
     ? `${hovP.sys} • ${SECTOR_BY_KEY[hovP.sector].label}${isProtostar(hovP) ? ' · PROTO-ÉTOILE' : ''}`
     : portal
-      ? 'PORTAIL · SAUT EN DISTORSION'
+      ? `PORTAIL · ${THEMES[portal.to].gateName}`
       : 'NOYAU · TROU NOIR';
   const title = hovP
     ? hovP.title

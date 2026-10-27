@@ -1,13 +1,16 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { ACTIVE_SECTORS, PROJECTS, isProtostar } from '../data/projects';
 import { SECTOR_BY_KEY, STAR_TYPES, type StarClass, type UniverseKey } from '../data/sectors';
 import { buildBlackHole } from './blackHole';
 import { BH, portalIndex, type OrbitEngine } from './engine';
+import { buildDecor, type Decor } from './decor';
 import { originOf, PORTALS } from './portals';
 import { buildStarGeometry, starMaterial } from './starfield';
-import { beamTexture, discTexture, glowTexture, jetsTexture, portalRingTexture, portalVortexTexture, spikesTexture } from './textures';
+import { gateKit } from './gates3d';
+import { beamTexture, discTexture, glowTexture, jetsTexture, spikesTexture } from './textures';
+import { THEMES } from './themes';
 
 /*
  * Scène WebGL de la carte stellaire. Rien n'est reconstruit à la sélection : un seul useFrame
@@ -22,27 +25,6 @@ const PEACH = new THREE.Color('#FFC89A');
 
 /** Couleur de fond = clear color : espace quasi noir, pour que le disque et les étoiles portent la couleur. */
 export const SPACE = '#0E0E12';
-
-const NEBULAE: [number, number, number, number, string, number][] = [
-  [-300, 20, -100, 300, '#862217', 0.2],
-  [270, -30, 140, 260, '#862217', 0.2],
-  [70, 60, -360, 240, '#788CBE', 0.14],
-  [-70, -40, 360, 340, '#C4562E', 0.16],
-];
-
-/** Nébuleuses d'un univers de secteur : teinte du secteur + rouge de marque, autour de son origine. */
-function sectorNebulae(key: (typeof ACTIVE_SECTORS)[number]['key'], i: number): [number, number, number, number, string, number][] {
-  const [ox, oy, oz] = SECTOR_BY_KEY[key].origin;
-  const c = SECTOR_BY_KEY[key].color;
-  return [
-    [ox - 260, oy + 10, oz - 120 - i * 20, 340, '#862217', 0.2],
-    [ox + 240, oy - 30, oz + 160, 300, c, 0.1],
-    [ox + 40, oy + 50, oz - 380, 280, c, 0.08],
-    [ox - 90, oy - 40, oz + 380, 320, '#C4562E', 0.12],
-  ];
-}
-
-const UNIVERSE_ROT: Record<UniverseKey, number> = { hub: 0, data: 1.1, ia: 2.3, web: 3.4, outils: 4.6, archives: 5.5 };
 
 const PARTICLES = 4;
 const MAX_PLANETS = 4;
@@ -111,12 +93,13 @@ function useSceneObjects(engine: OrbitEngine) {
       ]),
     );
 
-    // Une nappe de nébuleuses par univers : seule celle de l'univers affiché est visible.
+    // Une nappe de nébuleuses par univers (couleurs du thème) : seule celle de l'univers affiché est visible.
     const nebulae = new Map<UniverseKey, THREE.Group>();
-    const nebulaSets: [UniverseKey, typeof NEBULAE][] = [['hub', NEBULAE], ...ACTIVE_SECTORS.map((sec, i) => [sec.key, sectorNebulae(sec.key, i)] as [UniverseKey, typeof NEBULAE])];
-    nebulaSets.forEach(([u, list]) => {
+    const universes: UniverseKey[] = ['hub', ...ACTIVE_SECTORS.map((sec) => sec.key)];
+    universes.forEach((u) => {
       const grp = new THREE.Group();
-      list.forEach(([x, y, z, r, color, a]) => {
+      grp.position.set(...originOf(u));
+      THEMES[u].nebulae.forEach(([x, y, z, r, color, a]) => {
         const s = new THREE.Sprite(keep(spriteMaterial(glow, color, a)));
         s.position.set(x, y, z);
         s.scale.setScalar(r * 2);
@@ -125,6 +108,18 @@ function useSceneObjects(engine: OrbitEngine) {
       });
       nebulae.set(u, grp);
       root.add(grp);
+    });
+
+    // Décor propre à chaque univers de secteur (ceinture, réseau, grille, gyroscope).
+    const decors = new Map<UniverseKey, Decor>();
+    ACTIVE_SECTORS.forEach((sec) => {
+      const [ox, oy, oz] = sec.origin;
+      const anchors = PROJECTS.filter((p) => p.sector === sec.key).map((p) => new THREE.Vector3(p.pos[0] - ox, p.pos[1] - oy, p.pos[2] - oz));
+      const d = buildDecor(THEMES[sec.key].decor, { mobile: engine.cfg.mobile, keep, disc, glow, anchors });
+      if (!d) return;
+      d.group.position.set(ox, oy, oz);
+      decors.set(sec.key, d);
+      root.add(d.group);
     });
 
     // Étoiles décoratives : jamais interceptées par la sélection (le hit-test ne connaît que les projets).
@@ -154,23 +149,14 @@ function useSceneObjects(engine: OrbitEngine) {
     const orbitGeos = Array.from({ length: MAX_PLANETS }, (_, j) =>
       keep(new THREE.BufferGeometry().setFromPoints(circlePoints(56, 0.12).map((v) => v.multiplyScalar(ORBIT_R(j))))),
     );
-    // Portails : anneau net + vortex tournant + halo, en unités de monde (grossissent à l'approche).
-    const ringTex = keep(portalRingTexture());
-    const vortexTex = keep(portalVortexTexture());
+    // Portes en 3D (gates3d.ts) : une forme par univers de destination, à l'échelle de leur rayon.
+    const kit = gateKit(keep, glow, disc);
     const portals = PORTALS.map((pt) => {
-      const g = new THREE.Group();
-      g.position.set(...pt.pos);
-      const halo = new THREE.Sprite(keep(spriteMaterial(glow, pt.color, 0.22, true)));
-      halo.scale.setScalar(pt.radius * 5);
-      const vortex = new THREE.Sprite(keep(spriteMaterial(vortexTex, pt.color, 0.9, true)));
-      vortex.scale.setScalar(pt.radius * 2.6);
-      const inner = new THREE.Sprite(keep(spriteMaterial(glow, '#0E0E12', 0.85)));
-      inner.scale.setScalar(pt.radius * 1.4);
-      const ring = new THREE.Sprite(keep(spriteMaterial(ringTex, pt.color, 1, true)));
-      ring.scale.setScalar(pt.radius * 2.8);
-      g.add(halo, inner, vortex, ring);
-      root.add(g);
-      return { g, halo, vortex, ring, from: pt.from, radius: pt.radius };
+      const gate = kit.make(pt.gate, pt.radius);
+      gate.group.position.set(...pt.pos);
+      gate.group.scale.setScalar(pt.radius);
+      root.add(gate.group);
+      return { gate, from: pt.from, radius: pt.radius, aim: new THREE.Quaternion() };
     });
 
     const stars: StarObj[] = PROJECTS.map((p, i) => {
@@ -229,7 +215,7 @@ function useSceneObjects(engine: OrbitEngine) {
       return { star, group: g, sector: p.sector, halo, dot, extra, companion, cocoon, jets, planets, planetMat, orbits, orbitMat, target };
     });
 
-    return { root, field, nebulae, portals, starMat, bh, flow, flowPos, flowCol, stars, disposables };
+    return { root, field, nebulae, decors, portals, kit, starMat, bh, flow, flowPos, flowCol, stars, disposables };
   }, [engine]);
 }
 
@@ -237,6 +223,7 @@ function Scene({ engine }: { engine: OrbitEngine }) {
   const objects = useSceneObjects(engine);
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const dpr = useThree((s) => s.viewport.dpr);
+  const lastUniverse = useRef<UniverseKey | null>(null);
 
   useEffect(() => () => objects.disposables.forEach((d) => d.dispose()), [objects]);
 
@@ -259,20 +246,33 @@ function Scene({ engine }: { engine: OrbitEngine }) {
     du.uDpr.value = dpr;
     du.uDim.value = 1;
     o.bh.group.visible = hub;
+    const theme = THEMES[universe];
+    if (lastUniverse.current !== universe) {
+      lastUniverse.current = universe;
+      state.gl.setClearColor(theme.clear, 1);
+    }
     o.nebulae.forEach((g, u) => (g.visible = u === universe));
+    o.decors.forEach((d, u) => {
+      d.group.visible = u === universe;
+      if (d.group.visible) d.update(T);
+    });
     o.field.position.set(...originOf(universe));
-    o.field.rotation.y = UNIVERSE_ROT[universe];
+    o.field.rotation.set(theme.field.tilt, theme.field.rot, 0);
+    o.field.scale.setScalar(theme.field.scale);
 
+    // Portes : orientées vers la caméra avec retard (on voit leur volume pendant les déplacements),
+    // plus un angle de trois-quarts propre à chaque forme.
     const hp = portalIndex(hovered);
+    o.kit.uTime.value = T;
+    const follow = reduced ? 1 : 1 - Math.exp(-dt * 1.8);
     o.portals.forEach((pt, i) => {
-      pt.g.visible = pt.from === universe;
-      if (!pt.g.visible) return;
-      const on = hp === i;
-      const pulse = 1 + Math.sin(T * 1.6 + i) * 0.03;
-      pt.vortex.material.rotation = -T * 0.9 - i;
-      pt.ring.scale.setScalar(pt.radius * 2.8 * pulse * (on ? 1.12 : 1));
-      pt.vortex.scale.setScalar(pt.radius * 2.6 * (on ? 1.12 : 1));
-      pt.halo.material.opacity = on ? 0.36 : 0.22;
+      const g = pt.gate.group;
+      g.visible = pt.from === universe;
+      if (!g.visible) return;
+      pt.aim.copy(q).multiply(pt.gate.tilt);
+      g.quaternion.slerp(pt.aim, follow);
+      g.scale.setScalar(pt.radius * (hp === i ? 1.12 : 1));
+      pt.gate.update(T + i * 0.7);
     });
     o.bh.sheetMat.uniforms.uTime.value = T;
     o.bh.sheetMat.uniforms.uDim.value = du.uDim.value;

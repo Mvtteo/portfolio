@@ -1,5 +1,6 @@
 import { ACTIVE_SECTORS, SECTOR_COUNTS } from '../data/projects';
 import { SECTOR_BY_KEY, type UniverseKey } from '../data/sectors';
+import { THEMES, type GateKind, type PortalLayout } from './themes';
 
 /*
  * Portails entre univers. Le noyau (hub) porte un portail par secteur ; chaque secteur porte un
@@ -15,8 +16,10 @@ export interface Portal {
   /** Couleur de l'anneau et du libellé = accent de l'univers de destination. */
   color: string;
   label: string;
-  /** Rayon de l'anneau en unités de monde. */
+  /** Rayon de la porte en unités de monde. */
   radius: number;
+  /** Forme de la porte = celle de l'univers de destination. */
+  gate: GateKind;
 }
 
 export const HUB_COLOR = '#F29A5C';
@@ -47,22 +50,51 @@ const hubPortals: Portal[] = ACTIVE_SECTORS.map((s) => ({
   color: s.color,
   label: `${s.label} · ${SECTOR_COUNTS[s.key]}`,
   radius: 30,
+  gate: THEMES[s.key].gate,
 }));
 
-/** Portails d'un secteur : en couronne r = 400 autour de son origine, au-delà de l'anneau des systèmes (r ≤ 222). */
+/**
+ * Position de la k-ième porte (sur n) dans un univers, selon sa disposition, relative à son origine.
+ * row : alignées à l'horizon derrière les systèmes · arch : en arche au-dessus · diamond : en losange
+ * sous le plan · crown : couronne inclinée autour.
+ */
+function layoutPos(layout: PortalLayout, k: number, n: number): [number, number, number] {
+  const t = n > 1 ? k / (n - 1) : 0.5;
+  switch (layout) {
+    case 'row':
+      return [-480 + t * 960, 90, -400];
+    case 'arch': {
+      const a = Math.PI * (0.12 + 0.76 * t);
+      return [Math.cos(a) * -470, 150 + Math.sin(a) * 210, -240];
+    }
+    case 'diamond': {
+      const a = (k / n) * Math.PI * 2 + Math.PI / 4;
+      return [Math.cos(a) * 400, -120, Math.sin(a) * 400];
+    }
+    case 'crown':
+    default: {
+      const a = (k / n) * Math.PI * 2 + 0.4;
+      return [Math.cos(a) * 360, k % 2 ? 120 : -50, Math.sin(a) * 360];
+    }
+  }
+}
+
+/** Portes d'un secteur : retour au noyau + une porte par autre secteur, disposées selon le thème de l'univers. */
 const sectorPortals: Portal[] = ACTIVE_SECTORS.flatMap((s) => {
   const dests: UniverseKey[] = ['hub', ...ACTIVE_SECTORS.filter((o) => o.key !== s.key).map((o) => o.key)];
   const [ox, oy, oz] = s.origin;
+  const layout = THEMES[s.key].layout;
   return dests.map((to, k) => {
-    const a = (k / dests.length) * Math.PI * 2 + Math.PI / dests.length + 0.4;
+    const [dx, dy, dz] = layoutPos(layout, k, dests.length);
     return {
       id: `${s.key}>${to}`,
       from: s.key,
       to,
-      pos: [ox + Math.cos(a) * 400, oy + Math.sin(a * 3) * 30, oz + Math.sin(a) * 400] as [number, number, number],
+      pos: [ox + dx, oy + dy, oz + dz] as [number, number, number],
       color: universeColor(to),
       label: to === 'hub' ? 'NOYAU · RETOUR' : `${SECTOR_BY_KEY[to].label} · ${SECTOR_COUNTS[to]}`,
-      radius: to === 'hub' ? 28 : 22,
+      radius: to === 'hub' ? 30 : 28,
+      gate: THEMES[to].gate,
     };
   });
 });
