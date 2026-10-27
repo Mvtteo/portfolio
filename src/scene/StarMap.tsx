@@ -8,8 +8,21 @@ import { BH, portalIndex, type OrbitEngine } from './engine';
 import { buildDecor, type Decor } from './decor';
 import { originOf, PORTALS, type Portal } from './portals';
 import { buildStarGeometry, starMaterial } from './starfield';
-import { beamTexture, discTexture, gateRippleTexture, glowTexture, jetsTexture, spikesTexture } from './textures';
-import { THEMES, type GateKind } from './themes';
+import {
+  beamTexture,
+  discTexture,
+  gateBlackholeTexture,
+  gateRiftTexture,
+  gateRippleTexture,
+  gateStargateTexture,
+  gateWormholeTexture,
+  glowTexture,
+  jetsTexture,
+  portalRingTexture,
+  portalVortexTexture,
+  spikesTexture,
+} from './textures';
+import { THEMES } from './themes';
 
 /*
  * Scène WebGL de la carte stellaire. Rien n'est reconstruit à la sélection : un seul useFrame
@@ -157,25 +170,16 @@ function useSceneObjects(engine: OrbitEngine) {
     const orbitGeos = Array.from({ length: MAX_PLANETS }, (_, j) =>
       keep(new THREE.BufferGeometry().setFromPoints(circlePoints(56, 0.12).map((v) => v.multiplyScalar(ORBIT_R(j))))),
     );
-    // Portes : une image par forme (public/gates/*.webp, générées puis détourées), animée ici :
-    // rotation, respiration, voile procédural. Chaque image n'apparaît qu'une fois chargée.
-    const loader = new THREE.TextureLoader();
-    const waiting = new Map<GateKind, THREE.SpriteMaterial[]>();
-    const loaded = new Set<GateKind>();
-    const gateTex = Object.fromEntries(
-      (['blackhole', 'stargate', 'wormhole', 'rift', 'vortex'] as GateKind[]).map((kind) => {
-        const t = keep(
-          loader.load(`${import.meta.env.BASE_URL}gates/${kind}.webp`, () => {
-            loaded.add(kind);
-            waiting.get(kind)?.forEach((m) => (m.visible = true));
-          }),
-        );
-        t.colorSpace = THREE.SRGBColorSpace;
-        t.anisotropy = 4;
-        return [kind, t];
-      }),
-    ) as Record<GateKind, THREE.Texture>;
-    const ripple = keep(gateRippleTexture());
+    // Portes : une forme par univers de destination, en unités de monde (elles grossissent à l'approche).
+    const tex = {
+      ring: keep(portalRingTexture()),
+      vortex: keep(portalVortexTexture()),
+      stargate: keep(gateStargateTexture()),
+      ripple: keep(gateRippleTexture()),
+      wormhole: keep(gateWormholeTexture()),
+      rift: keep(gateRiftTexture()),
+      blackhole: keep(gateBlackholeTexture()),
+    };
     const gateLayers = (pt: Portal): GateLayer[] => {
       const R = pt.radius;
       const L = (map: THREE.Texture, color: string, opacity: number, additive: boolean, w: number, h = w, spin = 0, breathe = 0): GateLayer => ({
@@ -185,27 +189,18 @@ function useSceneObjects(engine: OrbitEngine) {
         spin,
         breathe,
       });
-      const image = (w: number, spin = 0, breathe = 0.015) => {
-        const l = L(gateTex[pt.gate], '#ffffff', 1, false, w, w, spin, breathe);
-        if (!loaded.has(pt.gate)) {
-          l.s.material.visible = false;
-          waiting.set(pt.gate, [...(waiting.get(pt.gate) ?? []), l.s.material]);
-        }
-        return l;
-      };
       switch (pt.gate) {
         case 'blackhole':
-          return [image(R * 3.6)];
+          return [L(tex.blackhole, '#ffffff', 1, false, R * 3.2)];
         case 'stargate':
-          // Horizon animé posé sur l'image : ondes lentes dans l'anneau.
-          return [image(R * 3.2), L(ripple, pt.color, 0.22, true, R * 2.1, R * 2.1, 0.2, 0.05)];
+          return [L(tex.ripple, pt.color, 0.5, true, R * 2.3, R * 2.3, 0.25, 0.05), L(tex.stargate, pt.color, 1, true, R * 3, R * 3, 0.04)];
         case 'wormhole':
-          return [image(R * 3.3, -0.18), L(glow, '#ffffff', 0.35, true, R * 0.9, R * 0.9, 0, 0.2)];
+          return [L(glow, '#0E0E12', 0.8, false, R * 1.8), L(tex.wormhole, pt.color, 1, true, R * 3, R * 3, -0.6), L(glow, '#ffffff', 0.4, true, R * 0.9, R * 0.9, 0, 0.18)];
         case 'rift':
-          return [image(R * 4), L(glow, '#BFD4FF', 0.3, true, R * 0.9, R * 2.6, 0, 0.25)];
+          return [L(tex.rift, pt.color, 1, true, R * 1.7, R * 3.8), L(tex.rift, '#ffffff', 0.35, true, R * 0.8, R * 3.2, 0, 0.22)];
         case 'vortex':
         default:
-          return [image(R * 3.3, -0.45), L(glow, '#FFF2BF', 0.35, true, R * 0.8, R * 0.8, 0, 0.2)];
+          return [L(glow, '#0E0E12', 0.85, false, R * 1.4), L(tex.vortex, pt.color, 0.9, true, R * 2.6, R * 2.6, -0.9), L(tex.ring, pt.color, 1, true, R * 2.8)];
       }
     };
     const portals = PORTALS.map((pt) => {
