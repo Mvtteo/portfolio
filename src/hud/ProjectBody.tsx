@@ -1,6 +1,7 @@
 import type { CSSProperties, Ref } from 'react';
-import { isProtostar, linkNote, metaOf, starOf, techLine, type Project } from '../data/projects';
-import { PROTOSTAR_NAME, SECTOR_BY_KEY } from '../data/sectors';
+import { planetOf } from '../data/planets';
+import { linkNote, metaOf, starOf, techLine, type Project } from '../data/projects';
+import { SECTOR_BY_KEY } from '../data/sectors';
 import { StarIcon } from './Icons';
 import h from './hud.module.css';
 
@@ -40,10 +41,10 @@ export function ProjectBody({ p, titleRef, preview = true }: Props) {
       <dl className={h.metaGrid}>
         <div>
           <dt>OBJET</dt>
-          <dd>{(isProtostar(p) ? PROTOSTAR_NAME : starOf(p).name).toUpperCase()}</dd>
+          <dd>{planetOf(p).name.toUpperCase()}</dd>
         </div>
         <div>
-          <dt>TECHNOLOGIES · PLANÈTES</dt>
+          <dt>TECHNOLOGIES · LUNES</dt>
           <dd>{techLine(p)}</dd>
         </div>
         <div>

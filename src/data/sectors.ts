@@ -21,8 +21,6 @@ export const STAR_TYPES: Record<StarClass, StarType> = {
   binary: { core: '#FFB08A', halo: '#FF9E78', name: 'Système binaire · classes K + M' },
 };
 
-/** Projet sans dépôt ni démo publics : proto-étoile (cocon + jets), quel que soit le secteur. */
-export const PROTOSTAR_NAME = 'Proto-étoile · rien de public';
 
 export interface Sector {
   key: SectorKey;
