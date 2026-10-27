@@ -447,7 +447,9 @@ export class OrbitEngine {
     if (o.core) place(o.core, this.core.x, this.core.y + Math.max(BH.shadow * this.core.k * 2.2, 30) + 14, this.core.visible);
     PORTALS.forEach((p, i) => {
       const q = this.portalScreen[i];
-      place(o.portals[i], q.x, q.y - Math.max(p.radius * q.k * 1.25, 26) - 8, q.visible && !this.warpState);
+      // Libellé au-dessus de la porte ; la faille est plus haute que large.
+      const top = p.radius * q.k * (p.gate === 'rift' ? 1.95 : p.gate === 'blackhole' ? 0.9 : 1.4);
+      place(o.portals[i], q.x, q.y - Math.max(top, 26) - 8, q.visible && !this.warpState);
     });
   }
 

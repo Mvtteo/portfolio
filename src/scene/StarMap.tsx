@@ -1,13 +1,28 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { ACTIVE_SECTORS, PROJECTS, isProtostar } from '../data/projects';
 import { SECTOR_BY_KEY, STAR_TYPES, type StarClass, type UniverseKey } from '../data/sectors';
 import { buildBlackHole } from './blackHole';
 import { BH, portalIndex, type OrbitEngine } from './engine';
-import { originOf, PORTALS } from './portals';
+import { buildDecor, type Decor } from './decor';
+import { originOf, PORTALS, type Portal } from './portals';
 import { buildStarGeometry, starMaterial } from './starfield';
-import { beamTexture, discTexture, glowTexture, jetsTexture, portalRingTexture, portalVortexTexture, spikesTexture } from './textures';
+import {
+  beamTexture,
+  discTexture,
+  gateBlackholeTexture,
+  gateRiftTexture,
+  gateRippleTexture,
+  gateStargateTexture,
+  gateWormholeTexture,
+  glowTexture,
+  jetsTexture,
+  portalRingTexture,
+  portalVortexTexture,
+  spikesTexture,
+} from './textures';
+import { THEMES } from './themes';
 
 /*
  * Scène WebGL de la carte stellaire. Rien n'est reconstruit à la sélection : un seul useFrame
@@ -23,26 +38,14 @@ const PEACH = new THREE.Color('#FFC89A');
 /** Couleur de fond = clear color : espace quasi noir, pour que le disque et les étoiles portent la couleur. */
 export const SPACE = '#0E0E12';
 
-const NEBULAE: [number, number, number, number, string, number][] = [
-  [-300, 20, -100, 300, '#862217', 0.2],
-  [270, -30, 140, 260, '#862217', 0.2],
-  [70, 60, -360, 240, '#788CBE', 0.14],
-  [-70, -40, 360, 340, '#C4562E', 0.16],
-];
-
-/** Nébuleuses d'un univers de secteur : teinte du secteur + rouge de marque, autour de son origine. */
-function sectorNebulae(key: (typeof ACTIVE_SECTORS)[number]['key'], i: number): [number, number, number, number, string, number][] {
-  const [ox, oy, oz] = SECTOR_BY_KEY[key].origin;
-  const c = SECTOR_BY_KEY[key].color;
-  return [
-    [ox - 260, oy + 10, oz - 120 - i * 20, 340, '#862217', 0.2],
-    [ox + 240, oy - 30, oz + 160, 300, c, 0.1],
-    [ox + 40, oy + 50, oz - 380, 280, c, 0.08],
-    [ox - 90, oy - 40, oz + 380, 320, '#C4562E', 0.12],
-  ];
+/** Couche d'une porte : sprite, taille de base (l × h, unités de monde), rotation et respiration. */
+interface GateLayer {
+  s: THREE.Sprite;
+  w: number;
+  h: number;
+  spin: number;
+  breathe: number;
 }
-
-const UNIVERSE_ROT: Record<UniverseKey, number> = { hub: 0, data: 1.1, ia: 2.3, web: 3.4, outils: 4.6, archives: 5.5 };
 
 const PARTICLES = 4;
 const MAX_PLANETS = 4;
@@ -111,12 +114,13 @@ function useSceneObjects(engine: OrbitEngine) {
       ]),
     );
 
-    // Une nappe de nébuleuses par univers : seule celle de l'univers affiché est visible.
+    // Une nappe de nébuleuses par univers (couleurs du thème) : seule celle de l'univers affiché est visible.
     const nebulae = new Map<UniverseKey, THREE.Group>();
-    const nebulaSets: [UniverseKey, typeof NEBULAE][] = [['hub', NEBULAE], ...ACTIVE_SECTORS.map((sec, i) => [sec.key, sectorNebulae(sec.key, i)] as [UniverseKey, typeof NEBULAE])];
-    nebulaSets.forEach(([u, list]) => {
+    const universes: UniverseKey[] = ['hub', ...ACTIVE_SECTORS.map((sec) => sec.key)];
+    universes.forEach((u) => {
       const grp = new THREE.Group();
-      list.forEach(([x, y, z, r, color, a]) => {
+      grp.position.set(...originOf(u));
+      THEMES[u].nebulae.forEach(([x, y, z, r, color, a]) => {
         const s = new THREE.Sprite(keep(spriteMaterial(glow, color, a)));
         s.position.set(x, y, z);
         s.scale.setScalar(r * 2);
@@ -125,6 +129,18 @@ function useSceneObjects(engine: OrbitEngine) {
       });
       nebulae.set(u, grp);
       root.add(grp);
+    });
+
+    // Décor propre à chaque univers de secteur (ceinture, réseau, grille, gyroscope).
+    const decors = new Map<UniverseKey, Decor>();
+    ACTIVE_SECTORS.forEach((sec) => {
+      const [ox, oy, oz] = sec.origin;
+      const anchors = PROJECTS.filter((p) => p.sector === sec.key).map((p) => new THREE.Vector3(p.pos[0] - ox, p.pos[1] - oy, p.pos[2] - oz));
+      const d = buildDecor(THEMES[sec.key].decor, { mobile: engine.cfg.mobile, keep, disc, glow, anchors });
+      if (!d) return;
+      d.group.position.set(ox, oy, oz);
+      decors.set(sec.key, d);
+      root.add(d.group);
     });
 
     // Étoiles décoratives : jamais interceptées par la sélection (le hit-test ne connaît que les projets).
@@ -154,23 +170,49 @@ function useSceneObjects(engine: OrbitEngine) {
     const orbitGeos = Array.from({ length: MAX_PLANETS }, (_, j) =>
       keep(new THREE.BufferGeometry().setFromPoints(circlePoints(56, 0.12).map((v) => v.multiplyScalar(ORBIT_R(j))))),
     );
-    // Portails : anneau net + vortex tournant + halo, en unités de monde (grossissent à l'approche).
-    const ringTex = keep(portalRingTexture());
-    const vortexTex = keep(portalVortexTexture());
+    // Portes : une forme par univers de destination, en unités de monde (elles grossissent à l'approche).
+    const tex = {
+      ring: keep(portalRingTexture()),
+      vortex: keep(portalVortexTexture()),
+      stargate: keep(gateStargateTexture()),
+      ripple: keep(gateRippleTexture()),
+      wormhole: keep(gateWormholeTexture()),
+      rift: keep(gateRiftTexture()),
+      blackhole: keep(gateBlackholeTexture()),
+    };
+    const gateLayers = (pt: Portal): GateLayer[] => {
+      const R = pt.radius;
+      const L = (map: THREE.Texture, color: string, opacity: number, additive: boolean, w: number, h = w, spin = 0, breathe = 0): GateLayer => ({
+        s: new THREE.Sprite(keep(spriteMaterial(map, color, opacity, additive))),
+        w,
+        h,
+        spin,
+        breathe,
+      });
+      switch (pt.gate) {
+        case 'blackhole':
+          return [L(tex.blackhole, '#ffffff', 1, false, R * 3.2)];
+        case 'stargate':
+          return [L(tex.ripple, pt.color, 0.5, true, R * 2.3, R * 2.3, 0.25, 0.05), L(tex.stargate, pt.color, 1, true, R * 3, R * 3, 0.04)];
+        case 'wormhole':
+          return [L(glow, '#0E0E12', 0.8, false, R * 1.8), L(tex.wormhole, pt.color, 1, true, R * 3, R * 3, -0.6), L(glow, '#ffffff', 0.4, true, R * 0.9, R * 0.9, 0, 0.18)];
+        case 'rift':
+          return [L(tex.rift, pt.color, 1, true, R * 1.7, R * 3.8), L(tex.rift, '#ffffff', 0.35, true, R * 0.8, R * 3.2, 0, 0.22)];
+        case 'vortex':
+        default:
+          return [L(glow, '#0E0E12', 0.85, false, R * 1.4), L(tex.vortex, pt.color, 0.9, true, R * 2.6, R * 2.6, -0.9), L(tex.ring, pt.color, 1, true, R * 2.8)];
+      }
+    };
     const portals = PORTALS.map((pt) => {
       const g = new THREE.Group();
       g.position.set(...pt.pos);
+      const tall = pt.gate === 'rift';
       const halo = new THREE.Sprite(keep(spriteMaterial(glow, pt.color, 0.22, true)));
-      halo.scale.setScalar(pt.radius * 5);
-      const vortex = new THREE.Sprite(keep(spriteMaterial(vortexTex, pt.color, 0.9, true)));
-      vortex.scale.setScalar(pt.radius * 2.6);
-      const inner = new THREE.Sprite(keep(spriteMaterial(glow, '#0E0E12', 0.85)));
-      inner.scale.setScalar(pt.radius * 1.4);
-      const ring = new THREE.Sprite(keep(spriteMaterial(ringTex, pt.color, 1, true)));
-      ring.scale.setScalar(pt.radius * 2.8);
-      g.add(halo, inner, vortex, ring);
+      halo.scale.set(pt.radius * (tall ? 3.2 : 5), pt.radius * (tall ? 6 : 5), 1);
+      const layers = gateLayers(pt);
+      g.add(halo, ...layers.map((l) => l.s));
       root.add(g);
-      return { g, halo, vortex, ring, from: pt.from, radius: pt.radius };
+      return { g, halo, layers, from: pt.from };
     });
 
     const stars: StarObj[] = PROJECTS.map((p, i) => {
@@ -229,7 +271,7 @@ function useSceneObjects(engine: OrbitEngine) {
       return { star, group: g, sector: p.sector, halo, dot, extra, companion, cocoon, jets, planets, planetMat, orbits, orbitMat, target };
     });
 
-    return { root, field, nebulae, portals, starMat, bh, flow, flowPos, flowCol, stars, disposables };
+    return { root, field, nebulae, decors, portals, starMat, bh, flow, flowPos, flowCol, stars, disposables };
   }, [engine]);
 }
 
@@ -237,6 +279,7 @@ function Scene({ engine }: { engine: OrbitEngine }) {
   const objects = useSceneObjects(engine);
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
   const dpr = useThree((s) => s.viewport.dpr);
+  const lastUniverse = useRef<UniverseKey | null>(null);
 
   useEffect(() => () => objects.disposables.forEach((d) => d.dispose()), [objects]);
 
@@ -259,20 +302,31 @@ function Scene({ engine }: { engine: OrbitEngine }) {
     du.uDpr.value = dpr;
     du.uDim.value = 1;
     o.bh.group.visible = hub;
+    const theme = THEMES[universe];
+    if (lastUniverse.current !== universe) {
+      lastUniverse.current = universe;
+      state.gl.setClearColor(theme.clear, 1);
+    }
     o.nebulae.forEach((g, u) => (g.visible = u === universe));
+    o.decors.forEach((d, u) => {
+      d.group.visible = u === universe;
+      if (d.group.visible) d.update(T);
+    });
     o.field.position.set(...originOf(universe));
-    o.field.rotation.y = UNIVERSE_ROT[universe];
+    o.field.rotation.set(theme.field.tilt, theme.field.rot, 0);
+    o.field.scale.setScalar(theme.field.scale);
 
     const hp = portalIndex(hovered);
     o.portals.forEach((pt, i) => {
       pt.g.visible = pt.from === universe;
       if (!pt.g.visible) return;
-      const on = hp === i;
-      const pulse = 1 + Math.sin(T * 1.6 + i) * 0.03;
-      pt.vortex.material.rotation = -T * 0.9 - i;
-      pt.ring.scale.setScalar(pt.radius * 2.8 * pulse * (on ? 1.12 : 1));
-      pt.vortex.scale.setScalar(pt.radius * 2.6 * (on ? 1.12 : 1));
-      pt.halo.material.opacity = on ? 0.36 : 0.22;
+      const grow = hp === i ? 1.12 : 1;
+      pt.layers.forEach((l, j) => {
+        const b = 1 + (l.breathe ? Math.sin(T * 2.2 + i + j) * l.breathe : Math.sin(T * 1.6 + i) * 0.02);
+        l.s.scale.set(l.w * grow * b, l.h * grow * b, 1);
+        if (l.spin) l.s.material.rotation = T * l.spin + i;
+      });
+      pt.halo.material.opacity = hp === i ? 0.36 : 0.22;
     });
     o.bh.sheetMat.uniforms.uTime.value = T;
     o.bh.sheetMat.uniforms.uDim.value = du.uDim.value;

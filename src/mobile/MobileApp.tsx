@@ -15,6 +15,7 @@ import { SceneLayer } from '../scene/SceneLayer';
 import { webglAvailable } from '../scene/webgl';
 import { SceneOverlays } from '../scene/SceneOverlays';
 import { universeLabel } from '../scene/portals';
+import { THEMES } from '../scene/themes';
 import { WarpOverlay } from '../scene/WarpOverlay';
 import s from './mobile.module.css';
 
@@ -195,7 +196,7 @@ export function MobileApp() {
     select(i);
   };
 
-  let status = universe === 'hub' ? 'NOYAU · TOUCHEZ UN PORTAIL' : `UNIVERS ${SECTOR_BY_KEY[universe].label} · TOUCHEZ UNE ÉTOILE`;
+  let status = universe === 'hub' ? 'NOYAU · TOUCHEZ UN PORTAIL' : `${SECTOR_BY_KEY[universe].label} · ${THEMES[universe].place.toUpperCase()}`;
   if (fallback) status = 'MODE LISTE · CARTE 3D INDISPONIBLE';
   else if (warping) status = `SAUT EN DISTORSION → ${universeLabel(universe)}`;
   else if (selected != null && view === 'fiche') status = `${travelling ? 'EN ROUTE VERS' : 'CIBLE ·'} ${cur.sys}`;
