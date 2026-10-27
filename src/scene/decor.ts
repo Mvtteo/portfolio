@@ -4,7 +4,7 @@ import type { DecorKind } from './themes';
 /*
  * Décor propre à chaque univers de secteur, centré sur son origine (unités de monde).
  * belt : ceinture d'astéroïdes dorée · network : nœuds et liaisons d'un réseau neuronal ·
- * grid : sol quadrillé qui défile + planète à anneau · gyro : anneaux de gyroscope imbriqués.
+ * comets (Web) : comètes bleutées + planète à anneau · gyro : anneaux de gyroscope imbriqués.
  * Rien d'interactif : le hit-test ne connaît que les systèmes et les portes.
  */
 
@@ -97,34 +97,33 @@ export function buildDecor(kind: DecorKind, opts: { mobile: boolean; keep: Keep;
     };
   }
 
-  if (kind === 'grid') {
-    const size = 1800;
-    const step = 72;
-    const seg: number[] = [];
-    const col: number[] = [];
-    const base = new THREE.Color('#4E7FD0');
-    const fade = (x: number, z: number) => Math.max(0, 1 - Math.hypot(x, z) / (size * 0.55));
-    for (let v = -size / 2; v <= size / 2; v += step) {
-      for (let u = -size / 2; u < size / 2; u += step) {
-        // Segments courts : la teinte s'éteint vers les bords (mélange additif → plus sombre = plus discret).
-        [
-          [u, v, u + step, v],
-          [v, u, v, u + step],
-        ].forEach(([x1, z1, x2, z2]) => {
-          seg.push(x1, 0, z1, x2, 0, z2);
-          const f1 = fade(x1, z1);
-          const f2 = fade(x2, z2);
-          col.push(base.r * f1, base.g * f1, base.b * f1, base.r * f2, base.g * f2, base.b * f2);
-        });
+  if (kind === 'comets') {
+    // Comètes : quatre traînées bleutées qui traversent lentement l'univers, en boucle.
+    const COMETS = mobile ? 3 : 4;
+    const SEG = 24;
+    const TAIL = 170;
+    const comets = Array.from({ length: COMETS }, (_, i) => {
+      const a = r() * Math.PI * 2;
+      const from = new THREE.Vector3(Math.cos(a) * 900, 120 + (r() - 0.5) * 260, Math.sin(a) * 900);
+      const to = new THREE.Vector3(-from.x * 0.9 + (r() - 0.5) * 300, -60 + (r() - 0.5) * 200, -from.z * 0.9 + (r() - 0.5) * 300);
+      const pos = new Float32Array(SEG * 3);
+      const col = new Float32Array(SEG * 3);
+      const c = new THREE.Color(i % 2 ? '#BFD4FF' : '#7FA6E8');
+      for (let k = 0; k < SEG; k++) {
+        const f = Math.pow(1 - k / (SEG - 1), 1.6);
+        col.set([c.r * f, c.g * f, c.b * f], k * 3);
       }
-    }
-    const geo = keep(new THREE.BufferGeometry());
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(seg, 3));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    const grid = new THREE.LineSegments(geo, keep(new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending })));
-    grid.position.y = -200;
-    group.add(grid);
-
+      const geo = keep(new THREE.BufferGeometry());
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const tail = new THREE.Line(geo, keep(new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })));
+      tail.frustumCulled = false;
+      const head = new THREE.Sprite(keep(new THREE.SpriteMaterial({ map: glow, color: '#DCE8FF', transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending })));
+      head.scale.setScalar(26);
+      group.add(tail, head);
+      return { from, to, dir: to.clone().sub(from).normalize(), pos, geo, head, speed: 0.012 + r() * 0.01, phase: r() };
+    });
+    const tmp = new THREE.Vector3();
     // Planète à anneau, loin derrière : corps opaque, liseré lumineux, anneau incliné.
     const planet = new THREE.Group();
     planet.position.set(-620, 240, -820);
@@ -139,7 +138,22 @@ export function buildDecor(kind: DecorKind, opts: { mobile: boolean; keep: Keep;
     ring2.rotation.copy(ring.rotation);
     planet.add(rim, body, ring, ring2);
     group.add(planet);
-    return { group, update: (T) => (grid.position.z = (T * 18) % step) };
+    return {
+      group,
+      update: (T) =>
+        comets.forEach((c) => {
+          const u = (T * c.speed + c.phase) % 1;
+          tmp.copy(c.from).lerp(c.to, u);
+          c.head.position.copy(tmp);
+          // Apparition et disparition douces aux extrémités du trajet.
+          c.head.material.opacity = 0.9 * Math.min(1, u * 8, (1 - u) * 8);
+          for (let k = 0; k < SEG; k++) {
+            const d = (k / (SEG - 1)) * TAIL * Math.min(1, u * 8, (1 - u) * 8);
+            c.pos.set([tmp.x - c.dir.x * d, tmp.y - c.dir.y * d, tmp.z - c.dir.z * d], k * 3);
+          }
+          c.geo.attributes.position.needsUpdate = true;
+        }),
+    };
   }
 
   if (kind === 'gyro') {

@@ -9,7 +9,7 @@ import type { UniverseKey } from '../data/sectors';
 /** Forme de la porte qui mène à cet univers (identique depuis n'importe où). */
 export type GateKind = 'blackhole' | 'stargate' | 'wormhole' | 'rift' | 'vortex';
 /** Décor propre à l'univers, centré sur son origine. */
-export type DecorKind = 'none' | 'belt' | 'network' | 'grid' | 'gyro';
+export type DecorKind = 'none' | 'belt' | 'network' | 'comets' | 'gyro';
 /** Disposition des portes de sortie dans l'univers. */
 export type PortalLayout = 'hub' | 'row' | 'arch' | 'diamond' | 'crown';
 
@@ -78,7 +78,7 @@ export const THEMES: Record<UniverseKey, UniverseTheme> = {
     field: { rot: 2.3, scale: 1.15, tilt: -0.35 },
   },
   web: {
-    place: 'Grille azur',
+    place: 'Ciel azur',
     gate: 'rift',
     gateName: 'FAILLE SPATIALE',
     clear: '#090D15',
@@ -88,7 +88,7 @@ export const THEMES: Record<UniverseKey, UniverseTheme> = {
       [60, 120, -560, 420, '#1E3C78', 0.18],
       [-200, -90, 380, 260, '#4E7FD0', 0.08],
     ],
-    decor: 'grid',
+    decor: 'comets',
     layout: 'diamond',
     field: { rot: 3.4, scale: 0.95, tilt: 0.28 },
   },
