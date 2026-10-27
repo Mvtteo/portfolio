@@ -2,11 +2,12 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { ACTIVE_SECTORS, PROJECTS, isProtostar } from '../data/projects';
-import { SECTOR_BY_KEY, STAR_TYPES, type StarClass } from '../data/sectors';
+import { SECTOR_BY_KEY, STAR_TYPES, type StarClass, type UniverseKey } from '../data/sectors';
 import { buildBlackHole } from './blackHole';
-import { BH, type OrbitEngine } from './engine';
+import { BH, portalIndex, type OrbitEngine } from './engine';
+import { originOf, PORTALS } from './portals';
 import { buildStarGeometry, starMaterial } from './starfield';
-import { beamTexture, discTexture, glowTexture, jetsTexture, spikesTexture } from './textures';
+import { beamTexture, discTexture, glowTexture, jetsTexture, portalRingTexture, portalVortexTexture, spikesTexture } from './textures';
 
 /*
  * Scène WebGL de la carte stellaire. Rien n'est reconstruit à la sélection : un seul useFrame
@@ -28,6 +29,20 @@ const NEBULAE: [number, number, number, number, string, number][] = [
   [70, 60, -360, 240, '#788CBE', 0.14],
   [-70, -40, 360, 340, '#C4562E', 0.16],
 ];
+
+/** Nébuleuses d'un univers de secteur : teinte du secteur + rouge de marque, autour de son origine. */
+function sectorNebulae(key: (typeof ACTIVE_SECTORS)[number]['key'], i: number): [number, number, number, number, string, number][] {
+  const [ox, oy, oz] = SECTOR_BY_KEY[key].origin;
+  const c = SECTOR_BY_KEY[key].color;
+  return [
+    [ox - 260, oy + 10, oz - 120 - i * 20, 340, '#862217', 0.2],
+    [ox + 240, oy - 30, oz + 160, 300, c, 0.1],
+    [ox + 40, oy + 50, oz - 380, 280, c, 0.08],
+    [ox - 90, oy - 40, oz + 380, 320, '#C4562E', 0.12],
+  ];
+}
+
+const UNIVERSE_ROT: Record<UniverseKey, number> = { hub: 0, data: 1.1, ia: 2.3, web: 3.4, outils: 4.6, archives: 5.5 };
 
 const PARTICLES = 4;
 const MAX_PLANETS = 4;
@@ -59,6 +74,8 @@ function cepheidCurve(t: number) {
 
 interface StarObj {
   star: StarClass;
+  group: THREE.Group;
+  sector: string;
   halo: THREE.Sprite;
   dot: THREE.Sprite;
   extra: THREE.Sprite | null;
@@ -94,12 +111,20 @@ function useSceneObjects(engine: OrbitEngine) {
       ]),
     );
 
-    NEBULAE.forEach(([x, y, z, r, color, a]) => {
-      const s = new THREE.Sprite(keep(spriteMaterial(glow, color, a)));
-      s.position.set(x, y, z);
-      s.scale.setScalar(r * 2);
-      s.renderOrder = -2;
-      root.add(s);
+    // Une nappe de nébuleuses par univers : seule celle de l'univers affiché est visible.
+    const nebulae = new Map<UniverseKey, THREE.Group>();
+    const nebulaSets: [UniverseKey, typeof NEBULAE][] = [['hub', NEBULAE], ...ACTIVE_SECTORS.map((sec, i) => [sec.key, sectorNebulae(sec.key, i)] as [UniverseKey, typeof NEBULAE])];
+    nebulaSets.forEach(([u, list]) => {
+      const grp = new THREE.Group();
+      list.forEach(([x, y, z, r, color, a]) => {
+        const s = new THREE.Sprite(keep(spriteMaterial(glow, color, a)));
+        s.position.set(x, y, z);
+        s.scale.setScalar(r * 2);
+        s.renderOrder = -2;
+        grp.add(s);
+      });
+      nebulae.set(u, grp);
+      root.add(grp);
     });
 
     // Étoiles décoratives : jamais interceptées par la sélection (le hit-test ne connaît que les projets).
@@ -129,6 +154,25 @@ function useSceneObjects(engine: OrbitEngine) {
     const orbitGeos = Array.from({ length: MAX_PLANETS }, (_, j) =>
       keep(new THREE.BufferGeometry().setFromPoints(circlePoints(56, 0.12).map((v) => v.multiplyScalar(ORBIT_R(j))))),
     );
+    // Portails : anneau net + vortex tournant + halo, en unités de monde (grossissent à l'approche).
+    const ringTex = keep(portalRingTexture());
+    const vortexTex = keep(portalVortexTexture());
+    const portals = PORTALS.map((pt) => {
+      const g = new THREE.Group();
+      g.position.set(...pt.pos);
+      const halo = new THREE.Sprite(keep(spriteMaterial(glow, pt.color, 0.22, true)));
+      halo.scale.setScalar(pt.radius * 5);
+      const vortex = new THREE.Sprite(keep(spriteMaterial(vortexTex, pt.color, 0.9, true)));
+      vortex.scale.setScalar(pt.radius * 2.6);
+      const inner = new THREE.Sprite(keep(spriteMaterial(glow, '#0E0E12', 0.85)));
+      inner.scale.setScalar(pt.radius * 1.4);
+      const ring = new THREE.Sprite(keep(spriteMaterial(ringTex, pt.color, 1, true)));
+      ring.scale.setScalar(pt.radius * 2.8);
+      g.add(halo, inner, vortex, ring);
+      root.add(g);
+      return { g, halo, vortex, ring, from: pt.from, radius: pt.radius };
+    });
+
     const stars: StarObj[] = PROJECTS.map((p, i) => {
       const star = SECTOR_BY_KEY[p.sector].star;
       const type = STAR_TYPES[star];
@@ -182,10 +226,10 @@ function useSceneObjects(engine: OrbitEngine) {
       g.add(target);
 
       root.add(g);
-      return { star, halo, dot, extra, companion, cocoon, jets, planets, planetMat, orbits, orbitMat, target };
+      return { star, group: g, sector: p.sector, halo, dot, extra, companion, cocoon, jets, planets, planetMat, orbits, orbitMat, target };
     });
 
-    return { root, starMat, bh, flow, flowPos, flowCol, stars, disposables };
+    return { root, field, nebulae, portals, starMat, bh, flow, flowPos, flowCol, stars, disposables };
   }, [engine]);
 }
 
@@ -203,7 +247,8 @@ function Scene({ engine }: { engine: OrbitEngine }) {
     o.starMat.uniforms.uFocal.value = engine.focal;
     o.starMat.uniforms.uDpr.value = dpr;
 
-    const { filter, hovered, selected, reduced } = engine;
+    const { hovered, selected, reduced, universe } = engine;
+    const hub = universe === 'hub';
     // Mouvement réduit : le temps de la scène est figé (disque, pulsations, planètes immobiles).
     const T = reduced ? 0 : engine.time;
     const q = camera.quaternion;
@@ -212,16 +257,33 @@ function Scene({ engine }: { engine: OrbitEngine }) {
     du.uTime.value = T;
     du.uFocal.value = engine.focal;
     du.uDpr.value = dpr;
-    du.uDim.value = filter === 'all' ? 1 : 0.7;
+    du.uDim.value = 1;
+    o.bh.group.visible = hub;
+    o.nebulae.forEach((g, u) => (g.visible = u === universe));
+    o.field.position.set(...originOf(universe));
+    o.field.rotation.y = UNIVERSE_ROT[universe];
+
+    const hp = portalIndex(hovered);
+    o.portals.forEach((pt, i) => {
+      pt.g.visible = pt.from === universe;
+      if (!pt.g.visible) return;
+      const on = hp === i;
+      const pulse = 1 + Math.sin(T * 1.6 + i) * 0.03;
+      pt.vortex.material.rotation = -T * 0.9 - i;
+      pt.ring.scale.setScalar(pt.radius * 2.8 * pulse * (on ? 1.12 : 1));
+      pt.vortex.scale.setScalar(pt.radius * 2.6 * (on ? 1.12 : 1));
+      pt.halo.material.opacity = on ? 0.36 : 0.22;
+    });
     o.bh.sheetMat.uniforms.uTime.value = T;
     o.bh.sheetMat.uniforms.uDim.value = du.uDim.value;
     o.bh.shadow.quaternion.copy(q);
     o.bh.ring.visible = hovered === 'core' || engine.coreActive;
 
-    o.flow.visible = !reduced;
-    if (!reduced) {
-      ACTIVE_SECTORS.forEach((s, si) => {
-        const dim = filter !== 'all' && filter !== s.key;
+    o.flow.visible = !reduced && hub;
+    if (!reduced && hub) {
+      PORTALS.filter((pt) => pt.from === 'hub').forEach((pt, si) => {
+        const s = { center: pt.pos };
+        const dim = false;
         const len = Math.hypot(...s.center);
         const edge = BH.diskOut / len;
         for (let m = 0; m < PARTICLES; m++) {
@@ -243,6 +305,8 @@ function Scene({ engine }: { engine: OrbitEngine }) {
     }
 
     o.stars.forEach((st, i) => {
+      st.group.visible = st.sector === universe;
+      if (!st.group.visible) return;
       const p = engine.stars[i];
       const on = hovered === i || selected === i;
       const fade = p.dim ? 0.22 : 1;

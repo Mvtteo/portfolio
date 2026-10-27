@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PROFILE, type SectionKey } from '../data/profile';
 import { ACTIVE_SECTORS, N, neighbours, PROJECTS, SECTOR_COUNTS, type Filter } from '../data/projects';
-import { SECTOR_BY_KEY } from '../data/sectors';
+import { SECTOR_BY_KEY, type UniverseKey } from '../data/sectors';
+import { Breadcrumb } from '../hud/Breadcrumb';
 import { Chevron, CloseIcon, MenuIcon, SearchIcon, StarIcon, TargetIcon } from '../hud/Icons';
 import h from '../hud/hud.module.css';
 import { ProjectBody } from '../hud/ProjectBody';
@@ -13,6 +14,8 @@ import { MOBILE, OrbitEngine } from '../scene/engine';
 import { SceneLayer } from '../scene/SceneLayer';
 import { webglAvailable } from '../scene/webgl';
 import { SceneOverlays } from '../scene/SceneOverlays';
+import { universeLabel } from '../scene/portals';
+import { WarpOverlay } from '../scene/WarpOverlay';
 import s from './mobile.module.css';
 
 type View = 'map' | 'fiche' | 'liste' | 'menu';
@@ -26,7 +29,7 @@ const TABS: [SectionKey, string][] = [
   ['contact', 'CONTACT'],
 ];
 
-const SCENE_LABEL = `Carte stellaire des ${N} projets. La liste des projets offre le même contenu sans navigation 3D.`;
+const SCENE_LABEL = `Carte stellaire : un noyau et ${ACTIVE_SECTORS.length} univers reliés par des portails, ${N} projets. La liste des projets offre le même contenu sans navigation 3D.`;
 
 export function MobileApp() {
   const [engine] = useState(() => {
@@ -38,48 +41,74 @@ export function MobileApp() {
   const [fallback, setFallback] = useState(() => !webglAvailable());
   const [view, setView] = useState<View>(() => (fallback ? 'liste' : 'map'));
   const [selected, setSelected] = useState<number | null>(null);
+  /** Filtre de la liste uniquement ; la carte, elle, affiche un univers à la fois. */
   const [filter, setFilter] = useState<Filter>('all');
+  const [universe, setUniverse] = useState<UniverseKey>('hub');
+  const [warping, setWarping] = useState(false);
   const [query, setQuery] = useState('');
   const [travelling, setTravelling] = useState(false);
   const [tab, setTab] = useState<SectionKey>('profil');
 
   useLayoutEffect(() => {
-    engine.sync({ filter, reduced, selected: view === 'fiche' ? selected : null, driftAllowed: view === 'map' });
-  }, [engine, filter, selected, view, reduced]);
+    engine.sync({ reduced, selected: view === 'fiche' ? selected : null, driftAllowed: view === 'map' });
+  }, [engine, selected, view, reduced]);
 
   useEffect(() => {
-    engine.on({ onArrive: () => setTravelling(false) });
+    engine.on({
+      onArrive: () => setTravelling(false),
+      onWarp: (phase) => setWarping(phase !== 'end'),
+    });
   }, [engine]);
 
-  const select = useCallback(
-    (i: number) => {
-      engine.select(i);
-      setSelected(i);
-      setView('fiche');
+  const goUniverse = useCallback(
+    (to: UniverseKey, onSwap?: () => void) => {
+      setUniverse(to);
+      engine.warp(to, onSwap);
       setTravelling(!engine.reduced);
     },
     [engine],
   );
 
+  const select = useCallback(
+    (i: number) => {
+      const sector = PROJECTS[i].sector;
+      if (sector !== engine.universe || engine.warping) {
+        // Autre univers : saut d'abord, la fiche monte à la sortie de distorsion.
+        setSelected(null);
+        setView('map');
+        goUniverse(sector, () => {
+          engine.select(i);
+          setSelected(i);
+          setView('fiche');
+        });
+        return;
+      }
+      engine.select(i);
+      setSelected(i);
+      setView('fiche');
+      setTravelling(!engine.reduced);
+    },
+    [engine, goUniverse],
+  );
+
   const overview = () => {
     engine.overview();
     setSelected(null);
-    setFilter('all');
     setView('map');
     setTravelling(!reduced);
   };
 
-  /** Logo et nom : retour à l'accueil complet. */
-  const goHome = () => {
-    overview();
-    setQuery('');
+  const pickUniverse = (to: UniverseKey) => {
+    if (to === universe && !engine.warping) return overview();
+    setSelected(null);
+    setView('map');
+    goUniverse(to);
   };
 
-  const flySector = (key: Filter) => {
-    if (key === 'all') return overview();
-    engine.flySector(key, false);
-    setFilter(key);
-    setTravelling(!reduced);
+  /** Logo et nom : retour au noyau. */
+  const goHome = () => {
+    pickUniverse('hub');
+    setQuery('');
   };
 
   const closeAll = () => {
@@ -166,22 +195,23 @@ export function MobileApp() {
     select(i);
   };
 
-  let status = `VUE GÉNÉRALE · ${N} SYSTÈMES · TOUCHEZ UNE ÉTOILE`;
+  let status = universe === 'hub' ? 'NOYAU · TOUCHEZ UN PORTAIL' : `UNIVERS ${SECTOR_BY_KEY[universe].label} · TOUCHEZ UNE ÉTOILE`;
   if (fallback) status = 'MODE LISTE · CARTE 3D INDISPONIBLE';
+  else if (warping) status = `SAUT EN DISTORSION → ${universeLabel(universe)}`;
   else if (selected != null && view === 'fiche') status = `${travelling ? 'EN ROUTE VERS' : 'CIBLE ·'} ${cur.sys}`;
-  else if (filter !== 'all') status = `SECTEUR · ${SECTOR_BY_KEY[filter].label}`;
 
   const modal = view === 'liste' || view === 'menu';
   const chips = [['all', 'TOUS', 'all', N] as const, ...ACTIVE_SECTORS.map((x) => [x.key, x.label, x.star, SECTOR_COUNTS[x.key]] as const)];
 
   return (
-    <div className={s.root}>
+    <div className={s.root} data-warping={warping}>
       {fallback ? (
         <div aria-hidden="true" className={s.backdrop} />
       ) : (
         <>
-          <SceneLayer engine={engine} label={SCENE_LABEL} onSelect={select} onCore={() => goTab('profil')} onFallback={fallBack} />
-          <SceneOverlays engine={engine} hovered={null} selected={view === 'fiche' ? selected : null} filter={filter} counts={false} />
+          <SceneLayer engine={engine} label={SCENE_LABEL} onSelect={select} onCore={() => goTab('profil')} onPortal={pickUniverse} onFallback={fallBack} />
+          <SceneOverlays engine={engine} hovered={null} selected={view === 'fiche' ? selected : null} counts={false} />
+          <WarpOverlay engine={engine} />
         </>
       )}
 
@@ -207,22 +237,25 @@ export function MobileApp() {
             </button>
           </h1>
           <p className={s.role}>{PROFILE.role}</p>
+          {!fallback && (
+            <div className={s.crumbs}>
+              <Breadcrumb
+                compact
+                universe={universe}
+                warping={warping}
+                project={view === 'fiche' && selected != null ? PROJECTS[selected] : null}
+                section={null}
+                onHub={goHome}
+                onUniverse={pickUniverse}
+              />
+            </div>
+          )}
         </section>
 
         <div className={s.bottom} data-hidden={view === 'fiche'} inert={view === 'fiche'}>
           <span aria-live="polite" className={s.status}>
             {status}
           </span>
-          {!fallback && (
-            <div role="group" aria-label="Secteurs" className={s.chips}>
-              {chips.map(([key, label, mark, count]) => (
-                <button key={key} type="button" className={s.chip} aria-pressed={filter === key} onClick={() => flySector(key)}>
-                  <StarIcon kind={mark} size={13} />
-                  {label} <span className={s.chipCount}>{count}</span>
-                </button>
-              ))}
-            </div>
-          )}
           <div className={s.actions}>
             <button type="button" className={s.searchBtn} onClick={() => setView('liste')}>
               <SearchIcon />

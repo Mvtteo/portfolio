@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { KICKERS, NAV, PROFILE, type SectionKey } from '../data/profile';
-import { ACTIVE_SECTORS, N, neighbours, PROJECTS, SECTOR_COUNTS, type Filter } from '../data/projects';
-import { SECTOR_BY_KEY } from '../data/sectors';
+import { ACTIVE_SECTORS, N, neighbours, PROJECTS, SECTOR_COUNTS } from '../data/projects';
+import { SECTOR_BY_KEY, type UniverseKey } from '../data/sectors';
+import { Breadcrumb } from '../hud/Breadcrumb';
 import { Chevron, CloseIcon, StarIcon, TargetIcon } from '../hud/Icons';
 import h from '../hud/hud.module.css';
 import { ProjectBody } from '../hud/ProjectBody';
@@ -13,10 +14,12 @@ import { DESKTOP, OrbitEngine, type Hit } from '../scene/engine';
 import { SceneLayer } from '../scene/SceneLayer';
 import { webglAvailable } from '../scene/webgl';
 import { SceneOverlays } from '../scene/SceneOverlays';
+import { PORTALS, universeLabel } from '../scene/portals';
+import { WarpOverlay } from '../scene/WarpOverlay';
 import { Search } from './Search';
 import s from './desktop.module.css';
 
-const SCENE_LABEL = `Carte stellaire des ${N} projets. Pour un accès au clavier, utilisez la recherche ou la liste des projets.`;
+const SCENE_LABEL = `Carte stellaire : un noyau et ${ACTIVE_SECTORS.length} univers reliés par des portails, ${N} projets. Pour un accès au clavier, utilisez le fil d’Ariane, la recherche ou la liste des projets.`;
 
 export function DesktopApp() {
   const [engine] = useState(() => {
@@ -33,7 +36,8 @@ export function DesktopApp() {
   const [listOpen, setListOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
-  const [filter, setFilter] = useState<Filter>('all');
+  const [universe, setUniverse] = useState<UniverseKey>('hub');
+  const [warping, setWarping] = useState(false);
   const [drift, setDrift] = useState(!reduced);
   const [travelling, setTravelling] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -44,49 +48,74 @@ export function DesktopApp() {
 
   // État React → moteur (lu à chaque frame, sans re-rendu).
   useLayoutEffect(() => {
-    engine.sync({ filter, hovered, selected, drift, reduced, coreActive: section === 'profil' });
-  }, [engine, filter, hovered, selected, drift, reduced, section]);
+    engine.sync({ hovered, selected, drift, reduced, coreActive: section === 'profil' });
+  }, [engine, hovered, selected, drift, reduced, section]);
 
   useEffect(() => {
-    engine.on({ onArrive: () => setTravelling(false) });
+    engine.on({
+      onArrive: () => setTravelling(false),
+      onWarp: (phase) => setWarping(phase !== 'end'),
+    });
   }, [engine]);
 
   const travel = () => setTravelling(!reduced);
 
-  const select = useCallback(
-    (i: number) => {
-      engine.select(i);
-      setSelected(i);
-      setSection(null);
-      setSearchOpen(false);
+  /** Saut vers un univers ; `onSwap` s'exécute à l'arrivée (écran couvert par le flash). */
+  const goUniverse = useCallback(
+    (to: UniverseKey, onSwap?: () => void) => {
+      setUniverse(to);
+      setHovered(null);
+      engine.warp(to, onSwap);
       setTravelling(!engine.reduced);
     },
     [engine],
   );
 
-  /** Vue générale : caméra au départ, panneau et liste fermés, filtre remis à « tous ». */
+  const select = useCallback(
+    (i: number) => {
+      setSection(null);
+      setSearchOpen(false);
+      const sector = PROJECTS[i].sector;
+      if (sector !== engine.universe || engine.warping) {
+        // Système d'un autre univers : on saute d'abord, la fiche s'ouvre à la sortie de distorsion.
+        setSelected(null);
+        goUniverse(sector, () => {
+          engine.select(i);
+          setSelected(i);
+        });
+        return;
+      }
+      engine.select(i);
+      setSelected(i);
+      setTravelling(!engine.reduced);
+    },
+    [engine, goUniverse],
+  );
+
+  /** Vue générale de l'univers affiché : panneau et liste fermés. */
   const overview = () => {
     engine.overview();
     setSelected(null);
     setSection(null);
-    setFilter('all');
     if (!fallback) setListOpen(false);
     travel();
   };
 
-  /** Logo et nom : retour à l'accueil complet (vue générale + recherche et menu remis à zéro). */
+  /** Fil d'Ariane, menu des univers et portails. */
+  const pickUniverse = (to: UniverseKey) => {
+    if (to === universe && !engine.warping) return overview();
+    setSelected(null);
+    setSection(null);
+    if (!fallback) setListOpen(false);
+    goUniverse(to);
+  };
+
+  /** Logo et nom : retour au noyau (vue générale + recherche et menu remis à zéro). */
   const goHome = () => {
-    overview();
+    pickUniverse('hub');
     setQuery('');
     setSearchOpen(false);
     setNavOpen(false);
-  };
-
-  const flySector = (key: Filter) => {
-    if (key === 'all') return overview();
-    engine.flySector(key, panelOpen);
-    setFilter(key);
-    travel();
   };
 
   const openSection = (key: SectionKey | 'projets') => {
@@ -99,8 +128,12 @@ export function DesktopApp() {
       return;
     }
     if (key === 'profil') {
-      engine.flyCore();
-      travel();
+      // Le profil est le noyau : depuis un autre univers, on y retourne en distorsion.
+      if (engine.universe !== 'hub' || engine.warping) goUniverse('hub', () => engine.flyCore());
+      else {
+        engine.flyCore();
+        travel();
+      }
     } else engine.setOffset(DESKTOP.target.offX);
     setSection(key);
     setSelected(null);
@@ -184,11 +217,15 @@ export function DesktopApp() {
     select(p.index);
   };
 
-  let status = `VUE GÉNÉRALE · ${N} SYSTÈMES · ${ACTIVE_SECTORS.length} SECTEURS`;
-  if (cur) status = `${travelling ? 'EN ROUTE VERS' : 'CIBLE ·'} ${cur.sys} ${cur.title.toUpperCase()}`;
+  const portalsHere = PORTALS.filter((p) => p.from === universe).length;
+  let status =
+    universe === 'hub'
+      ? `NOYAU · ${portalsHere} PORTAILS · ${N} SYSTÈMES`
+      : `UNIVERS ${SECTOR_BY_KEY[universe].label} · ${SECTOR_COUNTS[universe]} SYSTÈMES · ${portalsHere} PORTAILS`;
+  if (warping) status = `SAUT EN DISTORSION → ${universeLabel(universe)}`;
+  else if (cur) status = `${travelling ? 'EN ROUTE VERS' : 'CIBLE ·'} ${cur.sys} ${cur.title.toUpperCase()}`;
   else if (section) status = `PANNEAU · ${section.toUpperCase()}`;
   else if (fallback) status = 'MODE LISTE · CARTE 3D INDISPONIBLE';
-  else if (filter !== 'all') status = `SECTEUR · ${SECTOR_BY_KEY[filter].label}`;
 
   const navPressed = (k: SectionKey | 'projets') => section === k || (k === 'projets' && list);
   // Un onglet actif se referme au second clic (la liste reste ouverte en mode repli, faute de carte).
@@ -211,13 +248,22 @@ export function DesktopApp() {
   );
 
   return (
-    <div className={s.root}>
+    <div className={s.root} data-warping={warping}>
       {fallback ? (
         <div aria-hidden="true" className={s.backdrop} />
       ) : (
         <>
-          <SceneLayer engine={engine} label={SCENE_LABEL} onSelect={select} onCore={() => openSection('profil')} onHover={setHovered} onFallback={fallBack} />
-          <SceneOverlays engine={engine} hovered={hovered} selected={selected} filter={filter} />
+          <SceneLayer
+            engine={engine}
+            label={SCENE_LABEL}
+            onSelect={select}
+            onCore={() => openSection('profil')}
+            onPortal={pickUniverse}
+            onHover={setHovered}
+            onFallback={fallBack}
+          />
+          <SceneOverlays engine={engine} hovered={hovered} selected={selected} />
+          <WarpOverlay engine={engine} />
         </>
       )}
 
@@ -267,6 +313,19 @@ export function DesktopApp() {
         </nav>
       </header>
 
+      {!fallback && (
+        <div className={s.crumbs}>
+          <Breadcrumb
+            universe={universe}
+            warping={warping}
+            project={cur}
+            section={section && section !== 'profil' ? section.toUpperCase() : section === 'profil' ? 'PROFIL' : null}
+            onHub={goHome}
+            onUniverse={pickUniverse}
+          />
+        </div>
+      )}
+
       <div aria-hidden="true" className={s.leftScrim} data-hidden={listOpen && !fallback} />
       <div className={s.left} data-hidden={listOpen && !fallback} inert={listOpen && !fallback}>
         <section aria-label="Présentation" className={s.identity}>
@@ -292,24 +351,6 @@ export function DesktopApp() {
           </div>
         </section>
 
-        {!fallback && (
-          <section aria-labelledby="sectors-title" className={s.sectors}>
-            <h2 id="sectors-title" className={s.sectorsTitle}>
-              SECTEURS
-            </h2>
-            {[['all', 'TOUS LES SYSTÈMES', 'all', N] as const, ...ACTIVE_SECTORS.map((x) => [x.key, x.name.toUpperCase(), x.star, SECTOR_COUNTS[x.key]] as const)].map(
-              ([key, label, mark, count]) => (
-                <button key={key} type="button" className={s.sectorRow} aria-pressed={filter === key} onClick={() => flySector(key)}>
-                  <StarIcon kind={mark} size={16} />
-                  <span className={s.sectorName}>{label}</span>
-                  <span className={s.sectorCount} style={{ color: key === 'all' ? 'var(--c-action)' : SECTOR_BY_KEY[key].color }}>
-                    {count}
-                  </span>
-                </button>
-              ),
-            )}
-          </section>
-        )}
       </div>
 
       <div className={s.controls}>
@@ -345,7 +386,7 @@ export function DesktopApp() {
 
       {!fallback && (
         <span className={s.hint} data-hidden={panelOpen}>
-          GLISSER : ORBITER · MOLETTE : ZOOM · CLIC : CIBLER
+          GLISSER : ORBITER · MOLETTE : ZOOM · CLIC : CIBLER OU FRANCHIR UN PORTAIL
         </span>
       )}
 

@@ -149,6 +149,12 @@
   color: var(--c-muted);
 }
 
+/* Fil d'Ariane : sous le nom, seul élément cliquable de l'intro. */
+.crumbs {
+  margin-top: 8px;
+  pointer-events: auto;
+}
+
 .chips {
   display: flex;
   gap: 6px;
@@ -556,4 +562,11 @@
   .fiche {
     height: calc(100% - 16px);
   }
+}
+
+/* Saut en distorsion : l'intro et la barre du bas s'effacent derrière le cockpit (le cap s'affiche dans le tableau de bord). */
+.root[data-warping='true'] :is(.bottom, .intro) {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--d-fade) ease;
 }

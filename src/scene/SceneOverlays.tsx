@@ -1,49 +1,64 @@
 import { useEffect, useRef } from 'react';
-import { ACTIVE_SECTORS, PROJECTS, SECTOR_COUNTS } from '../data/projects';
+import { PROJECTS, SECTOR_COUNTS } from '../data/projects';
 import { SECTOR_BY_KEY, type SectorKey } from '../data/sectors';
 import { isProtostar } from '../data/projects';
-import type { Hit, OrbitEngine } from './engine';
+import { portalIndex, type Hit, type OrbitEngine } from './engine';
+import { PORTALS, universeName } from './portals';
 import s from './scene.module.css';
 
 interface Props {
   engine: OrbitEngine;
   hovered: Hit;
   selected: number | null;
-  /** Libellés de secteur avec compteur (desktop) ou sans (mobile). */
+  /** Libellés de portail avec compteur (desktop) ou sans (mobile). */
   counts?: boolean;
-  filter: SectorKey | 'all';
+  filter?: SectorKey | 'all';
 }
 
 /*
  * Éléments HTML posés sur la scène (positions écrites à chaque frame par engine.tick) :
  * libellés permanents des secteurs et du noyau, étiquette de survol, réticule de la cible.
  */
-export function SceneOverlays({ engine, hovered, selected, counts = true, filter }: Props) {
+export function SceneOverlays({ engine, hovered, selected, counts = true }: Props) {
   const labelRef = useRef<HTMLDivElement>(null);
   const reticleRef = useRef<HTMLDivElement>(null);
   const coreRef = useRef<HTMLSpanElement>(null);
-  const sectorRefs = useRef<Partial<Record<SectorKey, HTMLSpanElement | null>>>({});
+  const portalRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
   useEffect(() => {
-    engine.attach({ label: labelRef.current, reticle: reticleRef.current, core: coreRef.current, sectors: sectorRefs.current });
+    engine.attach({ label: labelRef.current, reticle: reticleRef.current, core: coreRef.current, portals: portalRefs.current });
   }, [engine]);
 
   const hovP = typeof hovered === 'number' ? PROJECTS[hovered] : null;
+  const hovPortal = portalIndex(hovered);
+  const portal = hovPortal != null ? PORTALS[hovPortal] : null;
+  const kicker = hovP
+    ? `${hovP.sys} • ${SECTOR_BY_KEY[hovP.sector].label}${isProtostar(hovP) ? ' · PROTO-ÉTOILE' : ''}`
+    : portal
+      ? 'PORTAIL · SAUT EN DISTORSION'
+      : 'NOYAU · TROU NOIR';
+  const title = hovP
+    ? hovP.title
+    : portal
+      ? portal.to === 'hub'
+        ? 'Retour au noyau'
+        : `${universeName(portal.to)} · ${SECTOR_COUNTS[portal.to]} systèmes`
+      : 'Mattéo Berthelot — profil';
+  const hint = hovP ? 'CLIC POUR CIBLER' : portal ? 'CLIC POUR ENTRER' : 'CLIC POUR OUVRIR';
   const showLabel = hovered != null && hovered !== selected;
 
   return (
     <div aria-hidden="true" className={s.overlays}>
-      {ACTIVE_SECTORS.map((sec) => (
+      {PORTALS.map((pt, i) => (
         <span
-          key={sec.key}
+          key={pt.id}
           ref={(el) => {
-            sectorRefs.current[sec.key] = el;
+            portalRefs.current[i] = el;
           }}
           className={s.sectorLabel}
-          data-dim={filter !== 'all' && filter !== sec.key}
-          style={{ visibility: 'hidden', color: sec.color }}
+          style={{ visibility: 'hidden', color: pt.color }}
         >
-          {counts ? `${sec.label} · ${SECTOR_COUNTS[sec.key]}` : sec.label}
+          {counts ? pt.label : pt.label.split(' · ')[0]}
         </span>
       ))}
       <span ref={coreRef} className={s.coreLabel} style={{ visibility: 'hidden' }}>
@@ -56,11 +71,11 @@ export function SceneOverlays({ engine, hovered, selected, counts = true, filter
         </svg>
       </div>
       <div ref={labelRef} className={s.hoverLabel} style={{ visibility: 'hidden' }} hidden={!showLabel}>
-        <span className={s.hoverKicker} style={hovP ? { color: SECTOR_BY_KEY[hovP.sector].color } : undefined}>
-          {hovP ? `${hovP.sys} • ${SECTOR_BY_KEY[hovP.sector].label}${isProtostar(hovP) ? ' · PROTO-ÉTOILE' : ''}` : 'NOYAU · TROU NOIR'}
+        <span className={s.hoverKicker} style={hovP ? { color: SECTOR_BY_KEY[hovP.sector].color } : portal ? { color: portal.color } : undefined}>
+          {kicker}
         </span>
-        <span className={s.hoverTitle}>{hovP ? hovP.title : 'Mattéo Berthelot — profil'}</span>
-        <span className={s.hoverHint}>{hovP ? 'CLIC POUR CIBLER' : 'CLIC POUR OUVRIR'}</span>
+        <span className={s.hoverTitle}>{title}</span>
+        <span className={s.hoverHint}>{hint}</span>
       </div>
     </div>
   );

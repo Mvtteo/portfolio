@@ -1,6 +1,8 @@
 import { Component, lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { useLatest } from '../lib/hooks';
-import type { Hit, OrbitEngine } from './engine';
+import type { UniverseKey } from '../data/sectors';
+import { portalIndex, type Hit, type OrbitEngine } from './engine';
+import { PORTALS } from './portals';
 import s from './scene.module.css';
 
 const StarMap = lazy(() => import('./StarMap'));
@@ -23,6 +25,8 @@ interface Props {
   label: string;
   onSelect: (i: number) => void;
   onCore: () => void;
+  /** Clic sur un portail : saut vers son univers. */
+  onPortal: (to: UniverseKey) => void;
   onHover?: (h: Hit) => void;
   onFallback: () => void;
 }
@@ -31,9 +35,9 @@ interface Props {
  * Couche d'interaction de la carte : un déplacement de plus de 5 px (6 au toucher) est une orbite,
  * pas un clic ; deux doigts = pincement pour zoomer. La sélection passe par engine.hit (étoiles projet seulement).
  */
-export function SceneLayer({ engine, label, onSelect, onCore, onHover, onFallback }: Props) {
+export function SceneLayer({ engine, label, onSelect, onCore, onPortal, onHover, onFallback }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const handlers = useLatest({ onSelect, onCore, onHover });
+  const handlers = useLatest({ onSelect, onCore, onPortal, onHover });
 
   useEffect(() => {
     const el = wrapRef.current!;
@@ -110,6 +114,10 @@ export function SceneLayer({ engine, label, onSelect, onCore, onHover, onFallbac
         const h = engine.hit(...local(e));
         if (typeof h === 'number') handlers.current.onSelect(h);
         else if (h === 'core') handlers.current.onCore();
+        else {
+          const pi = portalIndex(h);
+          if (pi != null) handlers.current.onPortal(PORTALS[pi].to);
+        }
       }
       cursor();
     };

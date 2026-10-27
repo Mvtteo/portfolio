@@ -131,3 +131,48 @@ export function lensTexture() {
     512,
   );
 }
+
+/** Anneau de portail : couronne nette + halo intérieur et extérieur. */
+export function portalRingTexture() {
+  return make((ctx, s) => {
+    const h = s / 2;
+    const g = ctx.createRadialGradient(h, h, 0, h, h, h);
+    g.addColorStop(0, 'rgba(255,255,255,0)');
+    g.addColorStop(0.52, 'rgba(255,255,255,0.05)');
+    g.addColorStop(0.66, 'rgba(255,255,255,0.55)');
+    g.addColorStop(0.7, 'rgba(255,255,255,1)');
+    g.addColorStop(0.74, 'rgba(255,255,255,0.55)');
+    g.addColorStop(0.86, 'rgba(255,255,255,0.08)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, s, s);
+  }, 256);
+}
+
+/** Vortex de portail : bras spiralés qui s'éteignent vers le centre et le bord (tourné par le matériau). */
+export function portalVortexTexture() {
+  return make((ctx, s) => {
+    const h = s / 2;
+    ctx.translate(h, h);
+    for (let arm = 0; arm < 5; arm++) {
+      for (let k = 0; k < 120; k++) {
+        const t = k / 120;
+        const r = h * 0.66 * t;
+        const a = arm * ((Math.PI * 2) / 5) + t * 4.2;
+        const alpha = Math.sin(t * Math.PI) * 0.22;
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.beginPath();
+        ctx.arc(Math.cos(a) * r, Math.sin(a) * r, 2 + t * 7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, h * 0.66);
+    g.addColorStop(0, 'rgba(255,255,255,0.5)');
+    g.addColorStop(0.35, 'rgba(255,255,255,0.12)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, h * 0.66, 0, Math.PI * 2);
+    ctx.fill();
+  }, 256);
+}

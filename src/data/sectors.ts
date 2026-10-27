@@ -33,12 +33,15 @@ export interface Sector {
   star: StarClass;
   /** = STAR_TYPES[star].halo, recopié pour le HUD. */
   color: string;
+  /** Position du portail de ce secteur autour du noyau (univers « hub »). */
   center: [number, number, number];
+  /** Origine de l'univers du secteur : assez loin du noyau et des autres pour ne jamais être dans le champ (far = 6000). */
+  origin: [number, number, number];
 }
 
-type SectorDef = Omit<Sector, 'color'>;
+type SectorDef = Omit<Sector, 'color' | 'origin'>;
 
-/** Ajouter un secteur = ajouter une entrée ici. Les étoiles (anneau r = 72 autour du centre) restent hors du disque d'accrétion (r ≤ 110). */
+/** Ajouter un secteur = ajouter une entrée ici. `center` place son portail autour du noyau, hors du disque d'accrétion (r ≤ 110). */
 const DEFS: SectorDef[] = [
   { key: 'data', prefix: 'D', label: 'DATA', name: 'Secteur Data', star: 'G', center: [-210, 10, -36] },
   { key: 'ia', prefix: 'I', label: 'IA & AUTOMATION', name: 'IA & automation', star: 'pulsar', center: [-84, -80, 258] },
@@ -47,6 +50,12 @@ const DEFS: SectorDef[] = [
   { key: 'archives', prefix: 'A', label: 'ARCHIVES', name: 'Archives & forks', star: 'binary', center: [-24, 125, -282] },
 ];
 
-export const SECTORS: Sector[] = DEFS.map((d) => ({ ...d, color: STAR_TYPES[d.star].halo }));
+/** Écart entre deux univers, en unités de monde. */
+export const UNIVERSE_GAP = 30000;
+
+export const SECTORS: Sector[] = DEFS.map((d, i) => ({ ...d, color: STAR_TYPES[d.star].halo, origin: [(i + 1) * UNIVERSE_GAP, 0, 0] }));
+
+/** Univers : le noyau (hub, trou noir + portails) ou un secteur. */
+export type UniverseKey = 'hub' | SectorKey;
 
 export const SECTOR_BY_KEY = Object.fromEntries(SECTORS.map((s) => [s.key, s])) as Record<SectorKey, Sector>;

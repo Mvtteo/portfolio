@@ -258,7 +258,7 @@
   text-align: left;
 }
 
-/* ---------- Colonne gauche : identité + secteurs ---------- */
+/* ---------- Colonne gauche : identité (la navigation entre secteurs passe par le fil d'Ariane) ---------- */
 
 /* Voile de lisibilité : les étoiles qui passent derrière la colonne ne gênent pas la lecture. */
 .leftScrim {
@@ -275,10 +275,24 @@
   opacity: 0;
 }
 
+/* Fil d'Ariane : sous l'en-tête, au-dessus de la colonne d'identité (remplace la liste des secteurs). */
+.crumbs {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  top: 100px;
+  z-index: 19;
+  pointer-events: none;
+}
+
+.crumbs > * {
+  pointer-events: auto;
+}
+
 .left {
   position: absolute;
   left: var(--gutter);
-  top: 118px;
+  top: 172px;
   bottom: 108px;
   z-index: 10;
   display: flex;
@@ -357,57 +371,6 @@
 
 .cta > * {
   padding: 0 14px;
-}
-
-.sectors {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  width: 270px;
-}
-
-.sectorsTitle {
-  margin: 0;
-  padding: 0 10px 6px;
-  font-family: var(--f-mono);
-  font-size: var(--t-meta);
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  color: var(--c-muted);
-}
-
-.sectorRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: var(--hit-min);
-  padding: 0 12px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-
-.sectorRow:hover {
-  background: rgba(48, 48, 56, 0.6);
-}
-
-.sectorRow[aria-pressed='true'] {
-  background: rgba(48, 48, 56, 0.9);
-}
-
-.sectorName {
-  flex: 1;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-}
-
-.sectorCount {
-  font-family: var(--f-mono);
-  font-size: 11px;
-  color: var(--c-muted);
 }
 
 /* ---------- Commandes caméra + statut ---------- */
@@ -712,32 +675,18 @@
   .name {
     font-size: 28px;
   }
-
-  .sectors {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 2px 4px;
-    width: 100%;
-  }
-
-  .sectorsTitle {
-    grid-column: 1 / -1;
-  }
-
-  .sectorRow {
-    gap: 8px;
-    padding: 0 10px;
-  }
-
-  .sectorName {
-    font-size: 11.5px;
-  }
 }
 
 /* Dans les zones qui défilent, l'anneau de focus passe à l'intérieur pour ne pas être rogné. */
 .result:focus-visible,
-.sectorRow:focus-visible,
 .showAll:focus-visible,
 .navDrop .navItem:focus-visible {
   outline-offset: -2px;
+}
+
+/* Saut en distorsion : la colonne et les contrôles s'effacent, le cockpit prend l'écran ; en-tête et fil d'Ariane restent. */
+.root[data-warping='true'] :is(.left, .leftScrim, .controls, .hint) {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--d-fade) ease;
 }
