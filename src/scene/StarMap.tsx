@@ -6,22 +6,10 @@ import { SECTOR_BY_KEY, STAR_TYPES, type StarClass, type UniverseKey } from '../
 import { buildBlackHole } from './blackHole';
 import { BH, portalIndex, type OrbitEngine } from './engine';
 import { buildDecor, type Decor } from './decor';
-import { originOf, PORTALS, type Portal } from './portals';
+import { originOf, PORTALS } from './portals';
 import { buildStarGeometry, starMaterial } from './starfield';
-import {
-  beamTexture,
-  discTexture,
-  gateBlackholeTexture,
-  gateRiftTexture,
-  gateRippleTexture,
-  gateStargateTexture,
-  gateWormholeTexture,
-  glowTexture,
-  jetsTexture,
-  portalRingTexture,
-  portalVortexTexture,
-  spikesTexture,
-} from './textures';
+import { gateKit } from './gates3d';
+import { beamTexture, discTexture, glowTexture, jetsTexture, spikesTexture } from './textures';
 import { THEMES } from './themes';
 
 /*
@@ -37,15 +25,6 @@ const PEACH = new THREE.Color('#FFC89A');
 
 /** Couleur de fond = clear color : espace quasi noir, pour que le disque et les étoiles portent la couleur. */
 export const SPACE = '#0E0E12';
-
-/** Couche d'une porte : sprite, taille de base (l × h, unités de monde), rotation et respiration. */
-interface GateLayer {
-  s: THREE.Sprite;
-  w: number;
-  h: number;
-  spin: number;
-  breathe: number;
-}
 
 const PARTICLES = 4;
 const MAX_PLANETS = 4;
@@ -170,49 +149,14 @@ function useSceneObjects(engine: OrbitEngine) {
     const orbitGeos = Array.from({ length: MAX_PLANETS }, (_, j) =>
       keep(new THREE.BufferGeometry().setFromPoints(circlePoints(56, 0.12).map((v) => v.multiplyScalar(ORBIT_R(j))))),
     );
-    // Portes : une forme par univers de destination, en unités de monde (elles grossissent à l'approche).
-    const tex = {
-      ring: keep(portalRingTexture()),
-      vortex: keep(portalVortexTexture()),
-      stargate: keep(gateStargateTexture()),
-      ripple: keep(gateRippleTexture()),
-      wormhole: keep(gateWormholeTexture()),
-      rift: keep(gateRiftTexture()),
-      blackhole: keep(gateBlackholeTexture()),
-    };
-    const gateLayers = (pt: Portal): GateLayer[] => {
-      const R = pt.radius;
-      const L = (map: THREE.Texture, color: string, opacity: number, additive: boolean, w: number, h = w, spin = 0, breathe = 0): GateLayer => ({
-        s: new THREE.Sprite(keep(spriteMaterial(map, color, opacity, additive))),
-        w,
-        h,
-        spin,
-        breathe,
-      });
-      switch (pt.gate) {
-        case 'blackhole':
-          return [L(tex.blackhole, '#ffffff', 1, false, R * 3.2)];
-        case 'stargate':
-          return [L(tex.ripple, pt.color, 0.5, true, R * 2.3, R * 2.3, 0.25, 0.05), L(tex.stargate, pt.color, 1, true, R * 3, R * 3, 0.04)];
-        case 'wormhole':
-          return [L(glow, '#0E0E12', 0.8, false, R * 1.8), L(tex.wormhole, pt.color, 1, true, R * 3, R * 3, -0.6), L(glow, '#ffffff', 0.4, true, R * 0.9, R * 0.9, 0, 0.18)];
-        case 'rift':
-          return [L(tex.rift, pt.color, 1, true, R * 1.7, R * 3.8), L(tex.rift, '#ffffff', 0.35, true, R * 0.8, R * 3.2, 0, 0.22)];
-        case 'vortex':
-        default:
-          return [L(glow, '#0E0E12', 0.85, false, R * 1.4), L(tex.vortex, pt.color, 0.9, true, R * 2.6, R * 2.6, -0.9), L(tex.ring, pt.color, 1, true, R * 2.8)];
-      }
-    };
+    // Portes en 3D (gates3d.ts) : une forme par univers de destination, à l'échelle de leur rayon.
+    const kit = gateKit(keep, glow, disc);
     const portals = PORTALS.map((pt) => {
-      const g = new THREE.Group();
-      g.position.set(...pt.pos);
-      const tall = pt.gate === 'rift';
-      const halo = new THREE.Sprite(keep(spriteMaterial(glow, pt.color, 0.22, true)));
-      halo.scale.set(pt.radius * (tall ? 3.2 : 5), pt.radius * (tall ? 6 : 5), 1);
-      const layers = gateLayers(pt);
-      g.add(halo, ...layers.map((l) => l.s));
-      root.add(g);
-      return { g, halo, layers, from: pt.from };
+      const gate = kit.make(pt.gate, pt.radius);
+      gate.group.position.set(...pt.pos);
+      gate.group.scale.setScalar(pt.radius);
+      root.add(gate.group);
+      return { gate, from: pt.from, radius: pt.radius, aim: new THREE.Quaternion() };
     });
 
     const stars: StarObj[] = PROJECTS.map((p, i) => {
@@ -271,7 +215,7 @@ function useSceneObjects(engine: OrbitEngine) {
       return { star, group: g, sector: p.sector, halo, dot, extra, companion, cocoon, jets, planets, planetMat, orbits, orbitMat, target };
     });
 
-    return { root, field, nebulae, decors, portals, starMat, bh, flow, flowPos, flowCol, stars, disposables };
+    return { root, field, nebulae, decors, portals, kit, starMat, bh, flow, flowPos, flowCol, stars, disposables };
   }, [engine]);
 }
 
@@ -316,17 +260,19 @@ function Scene({ engine }: { engine: OrbitEngine }) {
     o.field.rotation.set(theme.field.tilt, theme.field.rot, 0);
     o.field.scale.setScalar(theme.field.scale);
 
+    // Portes : orientées vers la caméra avec retard (on voit leur volume pendant les déplacements),
+    // plus un angle de trois-quarts propre à chaque forme.
     const hp = portalIndex(hovered);
+    o.kit.uTime.value = T;
+    const follow = reduced ? 1 : 1 - Math.exp(-dt * 1.8);
     o.portals.forEach((pt, i) => {
-      pt.g.visible = pt.from === universe;
-      if (!pt.g.visible) return;
-      const grow = hp === i ? 1.12 : 1;
-      pt.layers.forEach((l, j) => {
-        const b = 1 + (l.breathe ? Math.sin(T * 2.2 + i + j) * l.breathe : Math.sin(T * 1.6 + i) * 0.02);
-        l.s.scale.set(l.w * grow * b, l.h * grow * b, 1);
-        if (l.spin) l.s.material.rotation = T * l.spin + i;
-      });
-      pt.halo.material.opacity = hp === i ? 0.36 : 0.22;
+      const g = pt.gate.group;
+      g.visible = pt.from === universe;
+      if (!g.visible) return;
+      pt.aim.copy(q).multiply(pt.gate.tilt);
+      g.quaternion.slerp(pt.aim, follow);
+      g.scale.setScalar(pt.radius * (hp === i ? 1.12 : 1));
+      pt.gate.update(T + i * 0.7);
     });
     o.bh.sheetMat.uniforms.uTime.value = T;
     o.bh.sheetMat.uniforms.uDim.value = du.uDim.value;
