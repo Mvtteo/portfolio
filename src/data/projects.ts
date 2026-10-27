@@ -311,16 +311,17 @@ const ENTRIES: ProjectEntry[] = [
   },
 ];
 
-/** Position calculée : projet i d'un secteur de n → anneau r=72, angle 2πi/n + 0,4, hauteur sin(2a)·22. */
+/** Espacement des systèmes dans l'univers de leur secteur : anneau r = 150 + 12·n, hauteur sin(2a)·40, un rang sur deux décalé de 22 %. */
 function layout(entries: ProjectEntry[]): Project[] {
   return entries.map((p, index) => {
     const sector = SECTOR_BY_KEY[p.sector];
     const peers = entries.filter((q) => q.sector === p.sector);
     const i = peers.indexOf(p);
     const n = peers.length;
-    const [cx, cy, cz] = sector.center;
+    const [ox, oy, oz] = sector.origin;
     const a = (i / n) * Math.PI * 2 + 0.4;
-    const pos: [number, number, number] = n === 1 ? [cx, cy, cz] : [cx + Math.cos(a) * 72, cy + Math.sin(a * 2) * 22, cz + Math.sin(a) * 72];
+    const r = (150 + 12 * n) * (i % 2 ? 0.78 : 1);
+    const pos: [number, number, number] = n === 1 ? [ox, oy, oz] : [ox + Math.cos(a) * r, oy + Math.sin(a * 2) * 40, oz + Math.sin(a) * r];
     return { ...p, index, sys: `${sector.prefix}-${String(i + 1).padStart(2, '0')}`, pos };
   });
 }

@@ -1,0 +1,137 @@
+/* Saut en distorsion : posé au-dessus de la scène et des libellés, sous le HUD. */
+.root {
+  --warp-i: 0;
+  --warp-tint: #f29a5c;
+  position: absolute;
+  inset: 0;
+  z-index: 16;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.root[data-active='true'] {
+  visibility: visible;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Cockpit : la verrière entre un peu avant les traînées et sort avec elles. */
+.cockpit {
+  position: absolute;
+  inset: 0;
+  opacity: min(1, calc(var(--warp-i) * 1.6));
+  transform: scale(calc(1.06 - var(--warp-i) * 0.06));
+}
+
+.frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.hull {
+  fill: #07070b;
+  opacity: 0.94;
+}
+
+.edge {
+  fill: none;
+  stroke: var(--warp-tint);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.55;
+}
+
+.reticle {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 92px;
+  height: 92px;
+  border: 1px solid rgba(254, 248, 241, 0.35);
+  border-radius: 50%;
+  translate: -50% -50%;
+}
+
+.reticle span {
+  position: absolute;
+  inset: 40px;
+  border-radius: 50%;
+  background: var(--warp-tint);
+  box-shadow: 0 0 14px var(--warp-tint);
+}
+
+.dash {
+  position: absolute;
+  left: 50%;
+  bottom: 4.5%;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  width: min(720px, 80%);
+  translate: -50% 0;
+  font-family: var(--f-mono);
+  color: var(--c-cream);
+}
+
+.readout {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+}
+
+.readout[data-right] {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.k {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--c-muted);
+}
+
+.v {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--warp-tint);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress {
+  position: relative;
+  flex: 1;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(254, 248, 241, 0.16);
+}
+
+.progress span {
+  position: absolute;
+  inset: 0;
+  background: var(--warp-tint);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+
+.cockpit[data-mobile='true'] .dash {
+  gap: 14px;
+  width: 88%;
+}
+
+.cockpit[data-mobile='true'] .readout {
+  min-width: 0;
+}
+
+.cockpit[data-mobile='true'] .v {
+  font-size: 15px;
+}
