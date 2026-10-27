@@ -2,7 +2,11 @@ import type { PerspectiveCamera } from 'three';
 import { PROJECTS } from '../data/projects';
 import type { UniverseKey } from '../data/sectors';
 import type { Filter } from '../data/projects';
+import { planetOf } from '../data/planets';
 import { originOf, PORTALS } from './portals';
+
+/** Rayon de chaque planète-projet (unités de monde), pour le hit-test et le réticule. */
+const PLANET_R = PROJECTS.map((p) => planetOf(p).radius);
 
 /*
  * Caméra et interaction de la carte, hors React. La scène R3F appelle `tick` à chaque frame ;
@@ -50,7 +54,7 @@ export const DESKTOP: EngineConfig = {
   home: { tx: 0, ty: 0, tz: 0, dist: 850, pitch: 0.26, offX: 130, offY: 0 },
   minDist: 110,
   maxDist: 1100,
-  target: { dist: 150, pitch: 0.2, offX: -220, offY: 0 },
+  target: { dist: 270, pitch: 0.2, offX: -40, offY: 0 },
   universe: { dist: 1150, pitch: 0.32 },
   hitMin: 16,
   hitPad: 6,
@@ -63,7 +67,7 @@ export const MOBILE: EngineConfig = {
   home: { tx: 0, ty: 0, tz: 0, dist: 1200, pitch: 0.34, offX: 0, offY: 40 },
   minDist: 140,
   maxDist: 1300,
-  target: { dist: 190, pitch: 0.25, offX: 0, offY: -150 },
+  target: { dist: 340, pitch: 0.25, offX: 0, offY: -150 },
   universe: { dist: 1600, pitch: 0.4 },
   hitMin: 24,
   hitPad: 10,
@@ -188,7 +192,11 @@ export class OrbitEngine {
   select(i: number) {
     const [x, y, z] = PROJECTS[i].pos;
     const t = this.cfg.target;
-    this.retarget({ tx: x, ty: y, tz: z, dist: t.dist, pitch: t.pitch, offX: t.offX, offY: t.offY });
+    // Vue de trois-quarts côté étoile : la planète est éclairée, le terminateur reste visible.
+    const [ox, , oz] = originOf(PROJECTS[i].sector);
+    const want = Math.atan2(ox - x, oz - z) + 0.75;
+    const turn = Math.atan2(Math.sin(want - this.cam.yaw), Math.cos(want - this.cam.yaw));
+    this.retarget({ tx: x, ty: y, tz: z, dist: t.dist, pitch: t.pitch, offX: t.offX, offY: t.offY, yaw: this.cam.yaw + turn });
   }
 
   /** Vue d'ensemble d'un univers (par défaut, celui affiché). */
@@ -403,13 +411,12 @@ export class OrbitEngine {
         s.visible = false;
         return;
       }
-      // Dans un univers de secteur, la caméra est plus loin : les systèmes restent lisibles (+30 %).
-      const featured = (p.priority === 'featured' ? (mobile ? 1.2 : 1.25) : 1) * (this.universe === 'hub' ? 1 : 1.3);
-      s.base = featured * clamp(q.k * (mobile ? 1.4 : 1.6), mobile ? 0.8 : 0.7, mobile ? 2.2 : 2.4);
+      // Planète : zone de clic = disque projeté (+ marge), jamais sous la cible minimale.
+      s.base = PLANET_R[i];
       s.x = q.x;
       s.y = q.y;
       s.k = q.k;
-      s.r = Math.max(hitMin, 9 * s.base + hitPad);
+      s.r = Math.max(hitMin, PLANET_R[i] * q.k * 1.15 + hitPad);
       s.visible = q.x > -60 && q.x < this.width + 60 && q.y > -60 && q.y < this.height + 60;
     });
     const core = this.universe === 'hub' ? this.toScreen(0, 0, 0, camera) : null;
@@ -438,17 +445,19 @@ export class OrbitEngine {
     };
     const pi = portalIndex(this.hovered);
     const h = typeof this.hovered === 'number' ? this.stars[this.hovered] : this.hovered === 'core' ? this.core : pi != null ? this.portalScreen[pi] : null;
-    if (o.label && h) place(o.label, h.x + 22, h.y - 70, h.visible);
+    if (o.label && h) place(o.label, h.x + 12 + Math.min(h.r, 120) * 0.7, h.y - 70 - Math.min(h.r, 120) * 0.4, h.visible);
     if (o.reticle && this.selected != null) {
+      // Le réticule encadre la planète, quelle que soit sa taille à l'écran.
       const s = this.stars[this.selected];
-      const half = this.cfg.mobile ? 28 : 32;
+      const half = Math.max(this.cfg.mobile ? 28 : 32, Math.min(s.r * 1.25, 180));
+      o.reticle.style.width = o.reticle.style.height = `${Math.round(half * 2)}px`;
       place(o.reticle, s.x - half, s.y - half, s.visible);
     }
     if (o.core) place(o.core, this.core.x, this.core.y + Math.max(BH.shadow * this.core.k * 2.2, 30) + 14, this.core.visible);
     PORTALS.forEach((p, i) => {
       const q = this.portalScreen[i];
-      // Libellé au-dessus de la porte ; la faille est plus haute que large.
-      const top = p.radius * q.k * (p.gate === 'rift' ? 1.95 : p.gate === 'blackhole' ? 0.9 : 1.4);
+      // Libellé au-dessus de la porte.
+      const top = p.radius * q.k * (p.gate === 'blackhole' ? 0.9 : p.gate === 'orb' ? 1.5 : 1.4);
       place(o.portals[i], q.x, q.y - Math.max(top, 26) - 8, q.visible && !this.warpState);
     });
   }

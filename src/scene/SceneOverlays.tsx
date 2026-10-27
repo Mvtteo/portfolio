@@ -34,7 +34,7 @@ export function SceneOverlays({ engine, hovered, selected, counts = true }: Prop
   const hovPortal = portalIndex(hovered);
   const portal = hovPortal != null ? PORTALS[hovPortal] : null;
   const kicker = hovP
-    ? `${hovP.sys} • ${SECTOR_BY_KEY[hovP.sector].label}${isProtostar(hovP) ? ' · PROTO-ÉTOILE' : ''}`
+    ? `${hovP.sys} • ${SECTOR_BY_KEY[hovP.sector].label}${isProtostar(hovP) ? ' · PROTO-PLANÈTE' : ''}`
     : portal
       ? `PORTAIL · ${THEMES[portal.to].gateName}`
       : 'NOYAU · TROU NOIR';

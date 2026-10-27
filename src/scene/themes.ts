@@ -7,7 +7,7 @@ import type { UniverseKey } from '../data/sectors';
  */
 
 /** Forme de la porte qui mène à cet univers (identique depuis n'importe où). */
-export type GateKind = 'blackhole' | 'stargate' | 'wormhole' | 'rift' | 'vortex';
+export type GateKind = 'blackhole' | 'goldring' | 'wormhole' | 'orb' | 'vortex';
 /** Décor propre à l'univers, centré sur son origine. */
 export type DecorKind = 'none' | 'belt' | 'network' | 'comets' | 'gyro';
 /** Disposition des portes de sortie dans l'univers. */
@@ -49,8 +49,8 @@ export const THEMES: Record<UniverseKey, UniverseTheme> = {
   },
   data: {
     place: 'Ceinture dorée',
-    gate: 'stargate',
-    gateName: 'PORTE STELLAIRE',
+    gate: 'goldring',
+    gateName: 'ANNEAU D’OR',
     clear: '#120D09',
     nebulae: [
       [-320, 30, -260, 380, '#B8661E', 0.16],
@@ -79,8 +79,8 @@ export const THEMES: Record<UniverseKey, UniverseTheme> = {
   },
   web: {
     place: 'Ciel azur',
-    gate: 'rift',
-    gateName: 'FAILLE SPATIALE',
+    gate: 'orb',
+    gateName: 'ORBE DE PASSAGE',
     clear: '#090D15',
     nebulae: [
       [-300, 40, -200, 380, '#2F5BA8', 0.16],

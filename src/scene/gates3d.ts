@@ -7,9 +7,9 @@ import type { GateKind } from './themes';
  * caméra avec un angle de trois-quarts propre à sa forme, pour que son volume se lise.
  *
  * blackhole : sphère d'ombre + disque d'accrétion incliné (masqué derrière la sphère) + anneau de photons
- * hexgate   : anneau hexagonal facetté (métal sombre, liseré ambre), six balises, surface d'énergie animée
+ * goldring  : anneau d'or fin, surface d'or liquide en tourbillon, cercles armillaires, poussière d'or
  * wormhole  : tunnel d'anneaux qui s'enfoncent en boucle + paroi en entonnoir striée
- * rift      : déchirure verticale animée + éclats de roche en orbite
+ * orb       : orbe de verre (Fresnel), nébuleuse intérieure en rotation, rubans de lumière en orbite
  * vortex    : spirale de particules en entonnoir qui tourne
  *
  * Matériaux et géométries sont partagés entre toutes les portes d'une même forme ; seul le temps
@@ -38,30 +38,6 @@ const LOCAL_VERT = /* glsl */ `
   }
 `;
 
-/** Ombrage sans lumière de scène : diffus depuis une direction fixe en espace vue + liseré de Fresnel. */
-const SOLID_VERT = /* glsl */ `
-  varying vec3 vN;
-  varying vec3 vV;
-  void main() {
-    vec4 mv = modelViewMatrix * vec4(position, 1.0);
-    vN = normalize(normalMatrix * normal);
-    vV = normalize(-mv.xyz);
-    gl_Position = projectionMatrix * mv;
-  }
-`;
-const SOLID_FRAG = /* glsl */ `
-  uniform vec3 uBase;
-  uniform vec3 uRim;
-  varying vec3 vN;
-  varying vec3 vV;
-  void main() {
-    vec3 L = normalize(vec3(0.4, 0.7, 0.6));
-    float d = max(dot(vN, L), 0.0);
-    float fr = pow(1.0 - max(dot(vN, vV), 0.0), 2.4);
-    gl_FragColor = vec4(uBase * (0.35 + 0.9 * d) + uRim * fr * 1.4, 1.0);
-  }
-`;
-
 type Keep = <T extends { dispose(): void }>(o: T) => T;
 
 export interface Gate {
@@ -83,9 +59,6 @@ export function gateKit(keep: Keep, glow: THREE.Texture, disc: THREE.Texture) {
     s.scale.setScalar(size);
     return s;
   };
-
-  const solid = (base: string, rim: string) =>
-    keep(new THREE.ShaderMaterial({ uniforms: { uBase: { value: new THREE.Color(base) }, uRim: { value: new THREE.Color(rim) } }, vertexShader: SOLID_VERT, fragmentShader: SOLID_FRAG }));
 
   // ---------- Trou noir ----------
   const bhSphere = keep(new THREE.SphereGeometry(0.62, 40, 20));
@@ -142,13 +115,28 @@ export function gateKit(keep: Keep, glow: THREE.Texture, disc: THREE.Texture) {
     return { group, tilt: quat(0, 0.25), update: (T) => (disk.rotation.z = -T * 0.15) };
   });
 
-  // ---------- Porte hexagonale (Data) ----------
-  const hexRing = keep(new THREE.TorusGeometry(1, 0.13, 6, 6));
-  const hexMetal = solid('#2C2219', '#FFB25C');
-  const beaconGeo = keep(new THREE.BoxGeometry(0.1, 0.24, 0.3));
-  const beaconMat = keep(new THREE.MeshBasicMaterial({ color: '#FFD696' }));
-  const hexSurfGeo = keep(new THREE.CircleGeometry(0.9, 6));
-  const hexSurfMat = keep(
+  // ---------- Anneau d'or (Data) ----------
+  // Anneau fin et lisse, reflet qui en fait le tour ; surface d'or liquide en tourbillon lent ;
+  // deux cercles armillaires inclinés qui tournent autour ; poussière d'or sur l'anneau.
+  const goldTorus = keep(new THREE.TorusGeometry(1, 0.045, 24, 160));
+  const goldTorusMat = keep(
+    new THREE.ShaderMaterial({
+      uniforms: { uTime },
+      vertexShader: LOCAL_VERT,
+      fragmentShader: /* glsl */ `
+        uniform float uTime;
+        varying vec3 vPos;
+        void main() {
+          float a = atan(vPos.y, vPos.x);
+          float sweep = pow(0.5 + 0.5 * cos(a - uTime * 0.9), 10.0);
+          vec3 c = mix(vec3(0.85, 0.52, 0.18), vec3(1.0, 0.86, 0.55), 0.5 + 0.5 * sin(a * 3.0)) * (0.9 + 1.4 * sweep);
+          gl_FragColor = vec4(c, 1.0);
+        }
+      `,
+    }),
+  );
+  const goldSurf = keep(new THREE.CircleGeometry(0.97, 128));
+  const goldSurfMat = keep(
     new THREE.ShaderMaterial({
       uniforms: { uTime },
       vertexShader: LOCAL_VERT,
@@ -157,36 +145,63 @@ export function gateKit(keep: Keep, glow: THREE.Texture, disc: THREE.Texture) {
         varying vec3 vPos;
         ${NOISE}
         void main() {
-          vec2 p = vPos.xy;
-          float r = length(p);
-          float n = fbm(p * 3.0 + vec2(uTime * 0.25, -uTime * 0.18));
-          float caustic = pow(1.0 - abs(n * 2.0 - 1.0), 6.0);
-          float ripple = 0.5 + 0.5 * sin(r * 22.0 - uTime * 2.4);
-          vec3 c = vec3(1.0, 0.72, 0.36) * (0.18 + 0.9 * caustic + 0.12 * ripple) + vec3(1.0, 0.95, 0.85) * 0.35 * exp(-r * 4.0);
-          gl_FragColor = vec4(c * 0.9, 1.0);
+          float r = length(vPos.xy);
+          float a = atan(vPos.y, vPos.x);
+          // Tourbillon : l'angle se tord vers le centre, la matière s'y enfonce.
+          float tw = a + (1.0 - r) * 3.2 + uTime * 0.35;
+          float n = fbm(vec2(cos(tw), sin(tw)) * (1.6 + r * 2.2) + vec2(r * 3.0 - uTime * 0.4, 0.0));
+          float veins = pow(1.0 - abs(n * 2.0 - 1.0), 5.0);
+          vec3 deep = vec3(0.16, 0.07, 0.02);
+          vec3 gold = vec3(1.0, 0.72, 0.32);
+          vec3 c = mix(deep, gold, smoothstep(0.15, 1.0, r) * 0.55 + veins * 0.8);
+          c += vec3(1.0, 0.9, 0.7) * exp(-r * 9.0) * 0.6;
+          float edge = smoothstep(0.97, 0.88, r);
+          gl_FragColor = vec4(c * edge, edge * 0.92);
         }
       `,
+      transparent: true,
+      depthWrite: false,
       side: THREE.DoubleSide,
-      ...additive,
     }),
   );
-  cache.set('stargate', () => {
+  const armTorus = keep(new THREE.TorusGeometry(1, 0.008, 8, 160));
+  const armMat = keep(new THREE.MeshBasicMaterial({ color: '#FFD696', opacity: 0.55, ...additive }));
+  const dustN = 260;
+  const dustPos = new Float32Array(dustN * 3);
+  for (let i = 0; i < dustN; i++) {
+    const h = Math.sin(i * 91.7) * 43758.5453;
+    const r = h - Math.floor(h);
+    const a = (i / dustN) * Math.PI * 2 + r * 0.3;
+    const rad = 1 + (r - 0.5) * 0.12;
+    dustPos.set([Math.cos(a) * rad, Math.sin(a) * rad, (r - 0.5) * 0.12], i * 3);
+  }
+  const dustGeo = keep(new THREE.BufferGeometry());
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+  const dustMat = keep(new THREE.PointsMaterial({ map: disc, color: '#FFE2A8', size: 0.03, sizeAttenuation: true, opacity: 0.9, ...additive }));
+  cache.set('goldring', () => {
     const group = new THREE.Group();
-    const frame = new THREE.Group();
-    frame.add(new THREE.Mesh(hexRing, hexMetal));
-    for (let k = 0; k < 6; k++) {
-      const a = (k / 6) * Math.PI * 2;
-      const b = new THREE.Mesh(beaconGeo, beaconMat);
-      b.position.set(Math.cos(a) * 1.14, Math.sin(a) * 1.14, 0);
-      b.rotation.z = a;
-      frame.add(b);
-      const g = sprite('#FFC86E', 0.5, 0.55);
-      g.position.copy(b.position);
-      frame.add(g);
-    }
-    const surface = new THREE.Mesh(hexSurfGeo, hexSurfMat);
-    group.add(sprite('#FFB25C', 0.18, 4), surface, frame);
-    return { group, tilt: quat(-0.18, 0.5), update: (T) => (frame.rotation.z = T * 0.12) };
+    const torus = new THREE.Mesh(goldTorus, goldTorusMat);
+    const surface = new THREE.Mesh(goldSurf, goldSurfMat);
+    const dust = new THREE.Points(dustGeo, dustMat);
+    const arms = [0, 1].map((k) => {
+      const holder = new THREE.Group();
+      const ring = new THREE.Mesh(armTorus, armMat);
+      ring.scale.setScalar(1.22 + k * 0.12);
+      const bead = sprite('#FFE2A8', 0.9, 0.22);
+      bead.position.x = 1.22 + k * 0.12;
+      holder.add(ring, bead);
+      holder.rotation.set(k ? 1.1 : -0.9, k ? 0.5 : -0.4, 0);
+      return holder;
+    });
+    group.add(sprite('#FFB25C', 0.2, 3.8), surface, torus, dust, ...arms);
+    return {
+      group,
+      tilt: quat(-0.12, 0.42),
+      update: (T) => {
+        dust.rotation.z = T * 0.15;
+        arms.forEach((h, k) => (h.rotation.z = T * (k ? -0.35 : 0.28)));
+      },
+    };
   });
 
   // ---------- Trou de ver (IA) ----------
@@ -246,63 +261,66 @@ export function gateKit(keep: Keep, glow: THREE.Texture, disc: THREE.Texture) {
     };
   });
 
-  // ---------- Faille (Web) ----------
-  const riftGeo = keep(new THREE.PlaneGeometry(1.3, 3.2, 1, 1));
-  const riftMat = keep(
+  // ---------- Orbe de passage (Web) ----------
+  // Sphère de verre : liseré de Fresnel bleu glacier, nébuleuse intérieure qui tourne en 3D,
+  // cœur lumineux ; deux rubans de lumière en orbite inclinée avec une perle chacun.
+  const orbGeo = keep(new THREE.SphereGeometry(1, 64, 48));
+  const orbMat = keep(
     new THREE.ShaderMaterial({
       uniforms: { uTime },
-      vertexShader: LOCAL_VERT,
-      fragmentShader: /* glsl */ `
-        uniform float uTime;
-        varying vec3 vPos;
-        ${NOISE}
+      vertexShader: /* glsl */ `
+        varying vec3 vObj;
+        varying vec3 vN;
+        varying vec3 vV;
         void main() {
-          float y = vPos.y / 1.5;
-          float w = 0.42 * pow(max(0.0, 1.0 - y * y), 0.75);
-          w *= 0.85 + 0.3 * noise(vec2(y * 6.0, uTime * 0.6));
-          float x = abs(vPos.x);
-          float inside = 1.0 - smoothstep(w - 0.03, w, x);
-          float edge = exp(-pow((x - w) / 0.035, 2.0)) * (0.7 + 0.6 * noise(vec2(y * 14.0 - uTime * 3.0, 1.0)));
-          float streak = pow(fbm(vec2(vPos.x * 9.0, y * 1.5 + uTime * 0.8)), 2.0);
-          float core = exp(-pow(vPos.x / (w * 0.35 + 0.01), 2.0)) * (1.0 - y * y);
-          vec3 c = vec3(0.75, 0.85, 1.0) * edge * 1.6 + vec3(0.35, 0.55, 1.0) * inside * (0.25 + 1.2 * streak) + vec3(0.9, 0.95, 1.0) * core * inside * 0.9;
-          gl_FragColor = vec4(c, 1.0);
+          vObj = position;
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          vN = normalize(normalMatrix * normal);
+          vV = normalize(-mv.xyz);
+          gl_Position = projectionMatrix * mv;
         }
       `,
-      side: THREE.DoubleSide,
+      fragmentShader: /* glsl */ `
+        uniform float uTime;
+        varying vec3 vObj;
+        varying vec3 vN;
+        varying vec3 vV;
+        ${NOISE}
+        void main() {
+          float fr = pow(1.0 - max(dot(normalize(vN), normalize(vV)), 0.0), 2.6);
+          vec3 p = vObj;
+          float c = cos(uTime * 0.25), s = sin(uTime * 0.25);
+          p.xz = mat2(c, -s, s, c) * p.xz;
+          float neb = fbm(p.xy * 2.2 + p.z * 1.3 + vec2(uTime * 0.05, 0.0));
+          float wisps = pow(neb, 2.2);
+          float core = exp(-dot(vObj.xy, vObj.xy) * 3.5);
+          vec3 col = vec3(0.75, 0.86, 1.0) * fr * 1.5 + vec3(0.18, 0.36, 0.85) * wisps * 1.2 + vec3(0.85, 0.93, 1.0) * core * 0.55;
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `,
       ...additive,
     }),
   );
-  const shardGeo = keep(new THREE.DodecahedronGeometry(1, 0));
-  const shardMat = solid('#141A26', '#8FB4FF');
-  const shards = Array.from({ length: 14 }, (_, i) => {
-    const s = Math.sin(i * 12.9898) * 43758.5453;
-    const r = s - Math.floor(s);
-    return { y: -1.3 + (i / 13) * 2.6, side: i % 2 ? 1 : -1, off: 0.45 + r * 0.35, size: 0.05 + r * 0.09, spin: 0.3 + r };
-  });
-  cache.set('rift', () => {
+  const ribbonGeo = keep(new THREE.TorusGeometry(1.35, 0.012, 8, 200));
+  const ribbonMat = keep(new THREE.MeshBasicMaterial({ color: '#BFD4FF', opacity: 0.6, ...additive }));
+  cache.set('orb', () => {
     const group = new THREE.Group();
-    const plane = new THREE.Mesh(riftGeo, riftMat);
-    const rocks = shards.map((sh) => {
-      const m = new THREE.Mesh(shardGeo, shardMat);
-      m.scale.setScalar(sh.size);
-      group.add(m);
-      return m;
+    const orb = new THREE.Mesh(orbGeo, orbMat);
+    const ribbons = [0, 1].map((k) => {
+      const holder = new THREE.Group();
+      const ring = new THREE.Mesh(ribbonGeo, ribbonMat);
+      ring.scale.setScalar(1 + k * 0.12);
+      const bead = sprite('#DCE8FF', 0.95, 0.28);
+      bead.position.x = 1.35 * (1 + k * 0.12);
+      holder.add(ring, bead);
+      holder.rotation.set(k ? 1.25 : 0.35, k ? -0.4 : 0.6, k ? 0.3 : 0);
+      return holder;
     });
-    const halo = sprite('#4E7FD0', 0.22, 3.6);
-    halo.scale.set(2.4, 4.4, 1);
-    group.add(halo, plane);
+    group.add(sprite('#4E7FD0', 0.24, 4.2), orb, sprite('#DCE8FF', 0.5, 1.1), ...ribbons);
     return {
       group,
-      tilt: quat(0, 0.32),
-      update: (T) =>
-        rocks.forEach((m, i) => {
-          const sh = shards[i];
-          const w = 0.42 * Math.pow(Math.max(0, 1 - (sh.y / 1.5) ** 2), 0.75);
-          const a = T * 0.4 * sh.spin + i;
-          m.position.set(sh.side * (w + sh.off * 0.4) + Math.cos(a) * 0.05, sh.y + Math.sin(a) * 0.05, Math.sin(a * 0.7) * 0.25);
-          m.rotation.set(a, a * 0.7, 0);
-        }),
+      tilt: quat(0, 0.3),
+      update: (T) => ribbons.forEach((h, k) => (h.rotation.z = T * (k ? -0.5 : 0.4))),
     };
   });
 
@@ -346,6 +364,7 @@ export function gateKit(keep: Keep, glow: THREE.Texture, disc: THREE.Texture) {
     /** `radius` : rayon de la porte en unités de monde (taille des particules du vortex). */
     make: (kind: GateKind, radius: number): Gate => {
       if (kind === 'vortex') vortexMat.size = 0.065 * radius;
+      if (kind === 'goldring') dustMat.size = 0.045 * radius;
       return cache.get(kind)!();
     },
   };

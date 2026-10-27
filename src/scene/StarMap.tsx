@@ -1,36 +1,33 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { ACTIVE_SECTORS, PROJECTS, isProtostar } from '../data/projects';
-import { SECTOR_BY_KEY, STAR_TYPES, type StarClass, type UniverseKey } from '../data/sectors';
+import { planetOf } from '../data/planets';
+import { ACTIVE_SECTORS, PROJECTS } from '../data/projects';
+import { STAR_TYPES, type UniverseKey } from '../data/sectors';
 import { buildBlackHole } from './blackHole';
 import { BH, portalIndex, type OrbitEngine } from './engine';
 import { buildDecor, type Decor } from './decor';
 import { originOf, PORTALS } from './portals';
 import { buildStarGeometry, starMaterial } from './starfield';
 import { gateKit } from './gates3d';
-import { beamTexture, discTexture, glowTexture, jetsTexture, spikesTexture } from './textures';
+import { buildSun, moonOrbit, planetKit, type PlanetObj } from './planets3d';
+import { beamTexture, discTexture, glowTexture, spikesTexture } from './textures';
 import { THEMES } from './themes';
 
 /*
  * Scène WebGL de la carte stellaire. Rien n'est reconstruit à la sélection : un seul useFrame
- * fait avancer la caméra (engine.tick) puis met à jour tailles, couleurs et opacités en place.
- * Les tailles d'étoile sont en px écran (÷ k = px par unité à leur profondeur) ; orbites,
- * compagnon binaire et trou noir sont en unités de monde.
+ * fait avancer la caméra (engine.tick) puis met à jour positions, rotations et opacités en place.
+ * Dans chaque univers, les projets sont des planètes (planets3d.ts) autour de l'étoile du secteur ;
+ * tout y est en unités de monde.
  */
 
-const CREAM = new THREE.Color('#FEF8F1');
-const SIGNAL = new THREE.Color('#F29A5C');
 const PEACH = new THREE.Color('#FFC89A');
 
 /** Couleur de fond = clear color : espace quasi noir, pour que le disque et les étoiles portent la couleur. */
 export const SPACE = '#0E0E12';
 
 const PARTICLES = 4;
-const MAX_PLANETS = 4;
-const ORBIT_R = (j: number) => 11 + j * 6.5;
-
-function spriteMaterial(map: THREE.Texture, color: THREE.ColorRepresentation = CREAM, opacity = 1, additive = false) {
+function spriteMaterial(map: THREE.Texture, color: THREE.ColorRepresentation = '#FEF8F1', opacity = 1, additive = false) {
   return new THREE.SpriteMaterial({
     map,
     color,
@@ -39,36 +36,6 @@ function spriteMaterial(map: THREE.Texture, color: THREE.ColorRepresentation = C
     depthWrite: false,
     blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
   });
-}
-
-function circlePoints(n: number, tilt = 0) {
-  return Array.from({ length: n }, (_, i) => {
-    const a = (i / n) * Math.PI * 2;
-    return tilt ? new THREE.Vector3(Math.cos(a), Math.sin(a) * tilt, Math.sin(a)) : new THREE.Vector3(Math.cos(a), Math.sin(a), 0);
-  });
-}
-
-/** Courbe de lumière d'une céphéide : montée rapide (25 %), descente lente. 0 → 1. */
-function cepheidCurve(t: number) {
-  const f = t - Math.floor(t);
-  return f < 0.25 ? f / 0.25 : 1 - (f - 0.25) / 0.75;
-}
-
-interface StarObj {
-  star: StarClass;
-  group: THREE.Group;
-  sector: string;
-  halo: THREE.Sprite;
-  dot: THREE.Sprite;
-  extra: THREE.Sprite | null;
-  companion: THREE.Sprite | null;
-  cocoon: THREE.Sprite | null;
-  jets: THREE.Sprite | null;
-  planets: THREE.Sprite[];
-  planetMat: THREE.SpriteMaterial;
-  orbits: THREE.LineLoop[];
-  orbitMat: THREE.LineBasicMaterial;
-  target: THREE.LineLoop;
 }
 
 function useSceneObjects(engine: OrbitEngine) {
@@ -84,14 +51,6 @@ function useSceneObjects(engine: OrbitEngine) {
     const disc = keep(discTexture());
     const spikes = keep(spikesTexture());
     const beam = keep(beamTexture());
-    const jetsTex = keep(jetsTexture());
-    const cocoonTex = keep(
-      glowTexture([
-        [0, 'rgba(196,86,46,.34)'],
-        [0.6, 'rgba(134,34,23,.14)'],
-        [1, 'rgba(134,34,23,0)'],
-      ]),
-    );
 
     // Une nappe de nébuleuses par univers (couleurs du thème) : seule celle de l'univers affiché est visible.
     const nebulae = new Map<UniverseKey, THREE.Group>();
@@ -145,10 +104,6 @@ function useSceneObjects(engine: OrbitEngine) {
     flow.frustumCulled = false;
     root.add(flow);
 
-    const unitCircle = keep(new THREE.BufferGeometry().setFromPoints(circlePoints(48)));
-    const orbitGeos = Array.from({ length: MAX_PLANETS }, (_, j) =>
-      keep(new THREE.BufferGeometry().setFromPoints(circlePoints(56, 0.12).map((v) => v.multiplyScalar(ORBIT_R(j))))),
-    );
     // Portes en 3D (gates3d.ts) : une forme par univers de destination, à l'échelle de leur rayon.
     const kit = gateKit(keep, glow, disc);
     const portals = PORTALS.map((pt) => {
@@ -159,63 +114,25 @@ function useSceneObjects(engine: OrbitEngine) {
       return { gate, from: pt.from, radius: pt.radius, aim: new THREE.Quaternion() };
     });
 
-    const stars: StarObj[] = PROJECTS.map((p, i) => {
-      const star = SECTOR_BY_KEY[p.sector].star;
-      const type = STAR_TYPES[star];
-      const proto = isProtostar(p);
-      const g = new THREE.Group();
-      g.position.set(...p.pos);
-
-      let cocoon: THREE.Sprite | null = null;
-      let jets: THREE.Sprite | null = null;
-      if (proto) {
-        cocoon = new THREE.Sprite(keep(spriteMaterial(cocoonTex, '#ffffff', 1, true)));
-        jets = new THREE.Sprite(keep(spriteMaterial(jetsTex, '#FFD9B0', 0.4, true)));
-        g.add(cocoon, jets);
-      }
-      const halo = new THREE.Sprite(keep(spriteMaterial(glow, type.halo, 0.5, true)));
-      g.add(halo);
-
-      let extra: THREE.Sprite | null = null;
-      if (star === 'A') extra = new THREE.Sprite(keep(spriteMaterial(spikes, type.halo, 0.75, true)));
-      if (star === 'pulsar') {
-        extra = new THREE.Sprite(keep(spriteMaterial(beam, type.halo, 0.6, true)));
-        extra.material.rotation = i * 1.3;
-      }
-      if (extra) g.add(extra);
-
-      const dot = new THREE.Sprite(keep(spriteMaterial(disc, type.core)));
-      g.add(dot);
-      let companion: THREE.Sprite | null = null;
-      if (star === 'binary') {
-        companion = new THREE.Sprite(keep(spriteMaterial(disc, '#FFE0C8')));
-        g.add(companion);
-      }
-
-      // Planètes = technologies (4 au plus), orbites visibles de près, au survol ou à la sélection.
-      const planetMat = keep(spriteMaterial(disc, CREAM, 0.85));
-      const planets = p.tech.slice(0, MAX_PLANETS).map(() => {
-        const s = new THREE.Sprite(planetMat);
-        g.add(s);
-        return s;
-      });
-      const orbitMat = keep(new THREE.LineBasicMaterial({ color: CREAM, transparent: true, opacity: 0.16, depthWrite: false }));
-      const orbits = planets.map((_, j) => {
-        const l = new THREE.LineLoop(orbitGeos[j], orbitMat);
-        l.visible = false;
-        g.add(l);
-        return l;
-      });
-
-      const target = new THREE.LineLoop(unitCircle, keep(new THREE.LineBasicMaterial({ color: SIGNAL, transparent: true, depthWrite: false })));
-      target.visible = false;
-      g.add(target);
-
-      root.add(g);
-      return { star, group: g, sector: p.sector, halo, dot, extra, companion, cocoon, jets, planets, planetMat, orbits, orbitMat, target };
+    // Étoile centrale de chaque univers : le type d'étoile du secteur.
+    const suns = new Map<UniverseKey, ReturnType<typeof buildSun>>();
+    ACTIVE_SECTORS.forEach((sec) => {
+      const sun = buildSun(sec.star, STAR_TYPES[sec.star], keep, { glow, disc, spikes, beam });
+      sun.group.position.set(...sec.origin);
+      suns.set(sec.key, sun);
+      root.add(sun.group);
     });
 
-    return { root, field, nebulae, decors, portals, kit, starMat, bh, flow, flowPos, flowCol, stars, disposables };
+    // Projets = planètes : ombrées par l'étoile de leur univers, lunes = technologies.
+    const planetsKit = planetKit(keep, glow);
+    const stars: PlanetObj[] = PROJECTS.map((p) => {
+      const sec = ACTIVE_SECTORS.find((x) => x.key === p.sector)!;
+      const obj = planetsKit.build(planetOf(p), p.pos, sec.origin, sec.color, p.sector, Math.min(4, p.tech.length));
+      root.add(obj.group);
+      return obj;
+    });
+
+    return { root, field, nebulae, decors, portals, kit, suns, planetsKit, starMat, bh, flow, flowPos, flowCol, stars, disposables };
   }, [engine]);
 }
 
@@ -304,72 +221,38 @@ function Scene({ engine }: { engine: OrbitEngine }) {
       o.flow.geometry.attributes.color.needsUpdate = true;
     }
 
-    o.stars.forEach((st, i) => {
-      st.group.visible = st.sector === universe;
-      if (!st.group.visible) return;
+    o.suns.forEach((sun, u) => {
+      sun.group.visible = u === universe;
+      if (sun.group.visible) sun.update(T);
+    });
+
+    o.planetsKit.uTime.value = T;
+    o.stars.forEach((pl, i) => {
+      pl.group.visible = pl.sector === universe;
+      if (!pl.group.visible) return;
       const p = engine.stars[i];
       const on = hovered === i || selected === i;
-      const fade = p.dim ? 0.22 : 1;
       const k = p.k || 1;
-      const b = p.base;
-      const px = (v: number) => (v * 2) / k;
+      const R = pl.look.radius;
+      pl.body.rotation.y = T * pl.look.spin + i;
+      pl.mat.uniforms.uHover.value = on ? 1 : 0;
+      pl.halo.material.opacity = on ? 0.32 : 0.18;
+      if (pl.dust) pl.dust.material.rotation = T * 0.1;
 
-      let haloR = on ? 28 : 17;
-      let haloA = on ? 0.55 : 0.34;
-      let coreA = 1;
-      if (st.star === 'cepheid') {
-        const L = cepheidCurve(T / 3.2 + i * 0.37);
-        haloR *= 0.82 + 0.36 * L;
-        haloA *= 0.7 + 0.45 * L;
-      }
-      if (st.star === 'pulsar' && st.extra) {
-        // Rotation rapide + scintillement quand un faisceau passe sur l'axe de visée.
-        const phase = T * 2.4 + i * 1.3;
-        st.extra.material.rotation = phase;
-        st.extra.scale.setScalar(px(22 * b));
-        st.extra.material.opacity = (on ? 0.6 : 0.38) * fade;
-        coreA = 0.7 + 0.3 * Math.pow(Math.abs(Math.cos(phase)), 12);
-      }
-      if (st.star === 'A' && st.extra) {
-        st.extra.scale.setScalar(px(24 * b));
-        st.extra.material.opacity = (on ? 0.8 : 0.55) * fade;
-      }
-
-      st.halo.scale.setScalar(px(haloR * b));
-      st.halo.material.opacity = haloA * fade;
-
-      if (st.cocoon && st.jets) {
-        st.cocoon.scale.setScalar(px(34 * b));
-        st.cocoon.material.opacity = fade;
-        st.jets.scale.setScalar(px(34 * b));
-        st.jets.material.opacity = 0.4 * fade;
-      }
-
-      if (st.companion) {
-        const a = T * 0.8 + i;
-        st.dot.position.set(Math.cos(a) * 1.75, 0, Math.sin(a) * 1.75);
-        st.companion.position.set(-Math.cos(a) * 5, 0, -Math.sin(a) * 5);
-        st.dot.scale.setScalar(px(2.8 * b));
-        st.companion.scale.setScalar(px(1.7 * b));
-        st.companion.material.opacity = fade;
-      } else st.dot.scale.setScalar(px(2.6 * b));
-      st.dot.material.opacity = coreA * fade;
-
-      st.planets.forEach((pl, j) => {
-        const R = ORBIT_R(j);
-        const a = T * (0.9 / (j + 1)) + j * 2.1 + i;
-        pl.position.set(Math.cos(a) * R, Math.sin(a) * R * 0.12, Math.sin(a) * R);
-        pl.scale.setScalar(px(Math.max(0.8, 1.3 * k)));
+      pl.moons.forEach((m, j) => {
+        const r = moonOrbit(R, j);
+        const a = T * (0.6 / (j + 1)) + j * 2.1 + i;
+        m.position.set(Math.cos(a) * r, Math.sin(a) * r * 0.12, Math.sin(a) * r);
       });
-      st.planetMat.opacity = 0.85 * fade;
+      // Orbites des lunes : de près, au survol ou à la sélection.
       const showOrbits = on || k > 2.2;
-      st.orbits.forEach((l) => (l.visible = showOrbits));
-      st.orbitMat.opacity = (on ? 0.28 : 0.16) * fade;
+      pl.orbits.forEach((l) => (l.visible = showOrbits));
+      pl.orbitMat.opacity = on ? 0.3 : 0.16;
 
-      st.target.visible = on;
+      pl.target.visible = on;
       if (on) {
-        st.target.quaternion.copy(q);
-        st.target.scale.setScalar((14 * b) / k);
+        pl.target.quaternion.copy(q);
+        pl.target.scale.setScalar(R * 1.6);
       }
     });
   });
