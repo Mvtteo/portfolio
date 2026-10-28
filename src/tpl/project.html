@@ -1,0 +1,39 @@
+  <header class="phead">
+/*NAV*/
+  </header>
+  <main id="contenu" class="proj">
+    <div class="wrap proj-top">
+      <a href="/#projets" class="back"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3L5 8l5 5"></path></svg>Tous les projets</a>
+      <p class="proj-kicker"><span>{{p.sys}}</span><span>{{p.sector}}</span><span>{{p.status}}</span></p>
+      <h1 class="disp proj-title">{{p.title}}</h1>
+      <p class="proj-desc">{{p.desc}}</p>
+      <ul aria-label="Technologies" class="chips"><sc-for list="{{p.tech}}" as="t"><li>{{t}}</li></sc-for></ul>
+      <div class="row-btns">
+        <sc-if value="{{p.demo}}"><a href="{{p.demo}}" target="_blank" rel="noopener noreferrer" class="btn btn-solid">Ouvrir la démo</a></sc-if>
+        <sc-if value="{{p.repo}}"><a href="{{p.repo}}" target="_blank" rel="noopener noreferrer" class="btn btn-line">Voir le code sur GitHub</a></sc-if>
+      </div>
+      <p class="proj-note">{{p.metaLabel}} : {{p.metaValue}}. {{p.linkNote}}</p>
+    </div>
+    <sc-if value="{{p.img}}">
+      <div class="wrap"><img class="proj-shot" src="{{p.img}}" alt="{{p.imgAlt}}" width="1280" height="800"></div>
+    </sc-if>
+
+    <section class="light" aria-label="Déroulé du projet">
+      <div class="wrap">
+        <sc-for list="{{p.blocks}}" as="b">
+          <section class="pblock" aria-labelledby="{{b.id}}">
+            <span class="step-n disp">{{b.n}}</span>
+            <h2 id="{{b.id}}" class="disp">{{b.title}}</h2>
+            <div class="pblock-body">
+              <sc-for list="{{b.paras}}" as="para"><p class="{{b.cls}}">{{para}}</p></sc-for>
+            </div>
+          </section>
+        </sc-for>
+      </div>
+    </section>
+
+    <nav aria-label="Autres projets" class="wrap pnav">
+      <a href="{{prev.href}}"><span>Projet précédent</span><strong class="disp">{{prev.title}}</strong></a>
+      <a href="{{next.href}}" class="pnav-next"><span>Projet suivant</span><strong class="disp">{{next.title}}</strong></a>
+    </nav>
+  </main>

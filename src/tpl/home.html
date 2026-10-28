@@ -1,0 +1,117 @@
+  <header id="top" class="hero">
+/*NAV*/
+    <div aria-hidden="true" class="topo" id="v-topo"><canvas></canvas></div>
+    <div class="hero-portrait">
+      <img src="/img/portrait.webp" alt="Portrait de Mattéo Berthelot en veste verte, regard tourné vers la gauche" width="1301" height="1209" fetchpriority="high">
+    </div>
+    <div class="hero-text" id="contenu">
+      <p class="disp hero-lead">Mesurer, puis automatiser</p>
+      <p class="hero-sub">Data Analyst chez Razorfish (Publicis), à Paris. J’analyse la performance social media et web, et j’automatise les reportings en Python. En Mastère Data &amp; IA à l’EFREI.</p>
+      <div class="row-btns">
+        <a href="#projets" class="btn btn-solid">Voir les projets</a>
+        <a href="/cv-matteo-berthelot.pdf" target="_blank" rel="noopener noreferrer" class="btn btn-line">Télécharger le CV (PDF)</a>
+      </div>
+    </div>
+    <div class="hero-name">
+      <h1 class="disp press" aria-label="Mattéo Berthelot" id="v-press"><sc-for list="{{nameChars}}" as="ch"><span aria-hidden="true">{{ch}}</span></sc-for></h1>
+    </div>
+    <sc-region name="pause"><button type="button" class="pause" onClick="{{toggleFx}}" aria-pressed="{{fxPausedStr}}">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><sc-if value="{{fxRunning}}"><path d="M3 2h3.5v12H3zM9.5 2H13v12H9.5z"></path></sc-if><sc-if value="{{fxPaused}}"><path d="M4 2l10 6-10 6z"></path></sc-if></svg>
+      {{fxLabel}}
+    </button></sc-region>
+    <a href="#contact" class="badge hero-badge magnet" data-magnet="70">Écrivez-<br>moi</a>
+  </header>
+
+  <main>
+    <!-- PROJETS : liste ; la sélection ouvre une page projet, les autres renvoient vers leur démo ou leur dépôt -->
+    <section id="projets" aria-labelledby="h-proj" class="light">
+      <div class="wrap">
+        <div class="head-2">
+          <h2 id="h-proj" class="disp big">Projets</h2>
+          <p class="lede">{{projIntro}}</p>
+        </div>
+        <div role="group" aria-label="Filtrer les projets par secteur" class="filters">
+          <sc-region name="filters"><sc-for list="{{filters}}" as="f">
+            <button type="button" class="filter" aria-pressed="{{f.pressed}}" onClick="{{f.pick}}">{{f.label}} <span>{{f.count}}</span></button>
+          </sc-for></sc-region>
+        </div>
+        <ul class="plist" id="v-plist" aria-label="Liste des projets">
+          <sc-region name="list"><sc-for list="{{rows}}" as="r">
+            <li>
+              <a class="prow" href="{{r.href}}" data-img="{{r.img}}" target="{{r.target}}" rel="{{r.rel}}">
+                <span class="prow-sys">{{r.sys}}</span>
+                <span class="prow-title disp">{{r.title}}</span>
+                <span class="prow-meta">{{r.sector}} · {{r.tech}}</span>
+                <span class="prow-go">{{r.goLabel}}
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12L12 4M5 4h7v7"></path></svg>
+                </span>
+              </a>
+            </li>
+          </sc-for></sc-region>
+        </ul>
+        <sc-region name="more"><sc-if value="{{showMore}}">
+          <div class="more"><button type="button" onClick="{{toggleAll}}" class="btn btn-solid">{{moreLabel}}</button></div>
+        </sc-if></sc-region>
+      </div>
+      <div class="ppeek" id="v-peek" aria-hidden="true"><img alt="" width="1280" height="800"></div>
+    </section>
+
+    <!-- SERVICES -->
+    <section id="services" aria-labelledby="h-svc" class="wrap split">
+      <h2 id="h-svc" class="disp big">Ce que je fais</h2>
+      <ul class="svc">
+        <sc-for list="{{services}}" as="sv">
+          <li>
+            <h3 class="disp">{{sv.title}}</h3>
+            <p>{{sv.desc}}</p>
+            <ul aria-label="Outils" class="chips"><sc-for list="{{sv.tools}}" as="t"><li>{{t}}</li></sc-for></ul>
+          </li>
+        </sc-for>
+      </ul>
+    </section>
+
+    <!-- PARCOURS : expérience pro et formation séparées -->
+    <section id="parcours" aria-labelledby="h-par" class="light">
+      <div class="wrap">
+        <h2 id="h-par" class="disp big">Parcours</h2>
+        <div class="par">
+          <sc-for list="{{tracks}}" as="tr">
+            <div>
+              <h3 class="par-h">{{tr.label}}</h3>
+              <table>
+                <caption class="sr">{{tr.label}} : établissement, période, rôle ou diplôme</caption>
+                <thead class="sr"><tr><th scope="col">Établissement</th><th scope="col">Période</th><th scope="col">Rôle ou diplôme</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{tr.items}}" as="tl">
+                    <tr>
+                      <th scope="row" class="disp">{{tl.org}}</th>
+                      <td class="par-when">{{tl.when}}</td>
+                      <td>{{tl.what}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONSULTING : comment se passe une mission, en étapes -->
+    <section id="consulting" aria-labelledby="h-cons" class="wrap">
+      <div class="head-2">
+        <h2 id="h-cons" class="disp big">Consulting</h2>
+        <p class="lede">{{consultIntro}}</p>
+      </div>
+      <ol class="steps">
+        <sc-for list="{{steps}}" as="st">
+          <li>
+            <span class="step-n disp">{{st.n}}</span>
+            <h3 class="disp">{{st.title}}</h3>
+            <p class="{{st.cls}}">{{st.desc}}</p>
+          </li>
+        </sc-for>
+      </ol>
+      <a href="mailto:mvtte0@proton.me?subject=Consulting" class="btn btn-solid">Décrire mon besoin par mail</a>
+    </section>
+  </main>

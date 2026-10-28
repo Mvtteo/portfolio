@@ -1,0 +1,41 @@
+  <section id="contact" aria-labelledby="h-cta" class="cta">
+    <div class="wrap">
+      <h2 id="h-cta" class="disp cta-title">Parlons données</h2>
+      <p class="cta-mail"><a href="mailto:mvtte0@proton.me">mvtte0@proton.me</a></p>
+      <a href="mailto:mvtte0@proton.me" class="badge cta-badge magnet" data-magnet="90">Écrire<br>un mail</a>
+    </div>
+  </section>
+
+  <footer class="wrap foot">
+    <nav aria-label="Pied de page" class="foot-nav">
+      <a href="{{home}}#top" class="disp">Accueil</a>
+      <a href="{{home}}#projets" class="disp">Projets</a>
+      <a href="{{home}}#services" class="disp">Services</a>
+      <a href="{{home}}#parcours" class="disp">Parcours</a>
+      <a href="{{home}}#consulting" class="disp">Consulting</a>
+    </nav>
+    <div class="foot-col">
+      <h2>Ailleurs</h2>
+      <a href="https://linkedin.com/in/mvtte0" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+      <a href="https://github.com/Mvtteo" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="/cv-matteo-berthelot.pdf" target="_blank" rel="noopener noreferrer">CV (PDF)</a>
+    </div>
+    <div class="foot-col">
+      <h2>Contact</h2>
+      <span>Paris</span>
+      <a href="mailto:mvtte0@proton.me">mvtte0@proton.me</a>
+    </div>
+    <div class="foot-end"><span>© 2026 Mattéo Berthelot</span><a href="#top">Retour en haut</a></div>
+  </footer>
+
+  <sc-region name="overlay"><sc-if value="{{menuOpen}}">
+    <div role="dialog" aria-modal="true" aria-label="Menu" class="menu">
+      <div class="nav">
+        <span class="logo disp">Mattéo<span>.B</span></span>
+        <button type="button" class="close" onClick="{{closeMenu}}" aria-label="Fermer le menu"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"></path></svg></button>
+      </div>
+      <nav aria-label="Sections" class="menu-links">
+        <sc-for list="{{menuItems}}" as="m"><a href="{{m.href}}" onClick="{{closeMenu}}" class="disp">{{m.label}}</a></sc-for>
+      </nav>
+    </div>
+  </sc-if></sc-region>

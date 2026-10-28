@@ -1,8 +1,9 @@
 # Mattéo Berthelot — portfolio
 
 Portfolio de Mattéo Berthelot, Data Analyst (V5+). Page unique en HTML/CSS/JS sans framework, construite avec Vite.
+Polices : Lexend Exa (titres, OFL) et Archivo (texte), via Google Fonts. Couleur d'accent : vert de la veste (#2D3E42).
 Effets portés de React Bits (reactbits.dev, MIT + Commons Clause) en JavaScript : Topography (relief WebGL2 du hero),
-TextPressure (nom), ChromaGrid (captures des projets), Magnet (pastilles). L'ancienne version « Data Orbit » reste
+TextPressure (nom), Magnet (pastilles). Les projets de la sélection ont une page `/projets/<id>` (mission, parcours, rendu). L'ancienne version « Data Orbit » reste
 dans l'historique git (jusqu'au merge de la PR #4).
 
 ```bash
@@ -14,11 +15,11 @@ npm run lint
 
 ## Organisation
 
-- `src/page.html` : gabarit de la page (trous `{{…}}`, `<sc-for>`, `<sc-if>`, `<sc-region>` re-rendues à chaque changement d'état) ;
-- `src/main.js` : moteur de gabarit, état (filtres, fiche projet, menu, FAQ) et montage des effets ;
-- `src/data.js` : projets, services, parcours, FAQ ;
+- `src/tpl/` : gabarits (`nav`, `home`, `project`, `end`) avec trous `{{…}}`, `<sc-for>`, `<sc-if>`, `<sc-region>` ;
+- `src/engine.js` : moteur de gabarit ; `src/main.js` : route (accueil ou page projet), état, effets ;
+- `src/data.js` : projets, récits des pages projet (`STORIES`), services, parcours, étapes du consulting ;
 - `src/topography.js`, `src/fx.js` : effets ; `src/styles.css` : styles ;
-- `public/img/` : portrait, photo « À propos », captures des projets.
+- `public/img/` : portrait et captures des projets ; `public/favicon.ico` : monogramme MB.
 
 ## Déploiement (Railway, mvtteo.fr)
 
