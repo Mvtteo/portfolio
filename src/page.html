@@ -1,0 +1,272 @@
+<div class="v5" style="width: 100%; min-height: 100vh; background: #140508; color: #F3F2EE; font-family: 'Archivo', system-ui, sans-serif; font-size: 16px; line-height: 1.55; font-variant-numeric: tabular-nums">
+  <a href="#projets" class="v5-skip">Aller aux projets</a>
+
+  <!-- HERO : le seul moment spectaculaire de la page -->
+  <header id="top" class="v5-hero" style="position: relative; height: 860px; overflow: hidden">
+    <nav aria-label="Navigation principale" style="position: relative; z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 24px; height: 80px; padding: 0 8%">
+      <a href="#top" aria-label="Mattéo Berthelot, retour en haut" style="font-size: 40px; font-weight: 800; letter-spacing: .01em; text-decoration: none; text-transform: uppercase; font-variation-settings: 'wdth' 62">Mattéo<span style="color: #8C8881">.B</span></a>
+      <div class="v5-navlinks" style="display: flex; gap: 8px; font-size: 16px; font-weight: 600">
+        <a href="#projets" style="display: flex; align-items: center; min-height: 44px; padding: 0 12px; text-decoration: none">Projets</a>
+        <a href="#services" style="display: flex; align-items: center; min-height: 44px; padding: 0 12px; text-decoration: none">Services</a>
+        <a href="#parcours" style="display: flex; align-items: center; min-height: 44px; padding: 0 12px; text-decoration: none">Parcours</a>
+        <a href="#consulting" style="display: flex; align-items: center; min-height: 44px; padding: 0 12px; text-decoration: none">Consulting</a>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px">
+        <a href="#contact" class="v5-btn v5-btn-line v7-hide-m" style="display: flex; align-items: center; min-height: 44px; padding: 0 18px; border: 1.5px solid #F3F2EE; font-size: 16px; font-weight: 700; text-decoration: none">Me contacter</a>
+        <button type="button" onClick="{{openMenu}}" aria-label="Ouvrir le menu" style="display: flex; flex-direction: column; justify-content: center; gap: 6px; width: 44px; height: 44px; padding: 0 10px; border: 1.5px solid #3A2226; background: none; cursor: pointer">
+          <span style="display: block; height: 2px; background: #F3F2EE"></span>
+          <span style="display: block; height: 2px; background: #F3F2EE"></span>
+        </button>
+      </div>
+    </nav>
+
+    <div aria-hidden="true" class="v7-topo" id="v-topo"><canvas></canvas></div>
+    <div class="v5-abs v7-m-portrait" style="position: absolute; left: 0; right: 0; top: 100px; bottom: 0; z-index: 2; pointer-events: none">
+      <img src="/img/portrait.webp" alt="Portrait de Mattéo Berthelot en veste verte, regard tourné vers la gauche" width="1301" height="1209" class="v7-portrait" style="position: absolute; left: 66%; bottom: 150px; height: 640px; width: auto; max-width: none; transform: translateX(-50%)">
+    </div>
+
+    <div class="v5-abs v7-m-text" style="position: absolute; left: 8%; top: 140px; z-index: 4; width: 46%; max-width: 680px; display: flex; flex-direction: column; align-items: flex-start; gap: 24px">
+      <p class="v5-big v7-lead-title" style="margin: 0; font-size: 96px; font-weight: 800; line-height: .86; text-transform: uppercase; font-variation-settings: 'wdth' 62">Mesurer, puis automatiser</p>
+      <p style="max-width: 32em; margin: 0; font-size: 16px; line-height: 1.6; color: #C9C4BE">Data Analyst chez Razorfish (Publicis), à Paris. J’analyse la performance social media et web, et j’automatise les reportings en Python. En Mastère Data &amp; IA à l’EFREI.</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px">
+        <a href="#projets" class="v5-btn v5-btn-solid" style="display: inline-flex; align-items: center; min-height: 52px; padding: 0 24px; background: #570110; color: #FFFFFF; font-size: 16px; font-weight: 700; text-decoration: none">Voir les projets</a>
+        <a href="/cv-matteo-berthelot.pdf" target="_blank" rel="noopener noreferrer" class="v5-btn v5-btn-line" style="display: inline-flex; align-items: center; min-height: 52px; padding: 0 24px; border: 1.5px solid #F3F2EE; font-size: 16px; font-weight: 700; text-decoration: none">Télécharger le CV (PDF)</a>
+      </div>
+    </div>
+
+    <div class="v5-abs v7-m-name" style="position: absolute; left: 8%; right: 8%; bottom: 26px; z-index: 4">
+      <h1 class="v5-big v7-press" aria-label="Mattéo Berthelot" id="v-press" style="margin: 0; font-size: 9.8vw; font-weight: 800; line-height: .8; text-transform: uppercase; white-space: nowrap">
+        <sc-for list="{{nameChars}}" as="ch"><span aria-hidden="true">{{ch}}</span></sc-for>
+      </h1>
+    </div>
+    <sc-region name="pause"><sc-if value="{{fxOn}}"><button type="button" class="v7-pause" onClick="{{toggleFx}}" aria-pressed="{{fxPausedStr}}">
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><sc-if value="{{fxRunning}}"><path d="M3 2h3.5v12H3zM9.5 2H13v12H9.5z"></path></sc-if><sc-if value="{{fxPaused}}"><path d="M4 2l10 6-10 6z"></path></sc-if></svg>
+      {{fxLabel}}
+    </button></sc-if></sc-region>
+    <a href="#contact" class="v5-badge v5-abs v7-magnet" data-magnet="70" style="position: absolute; right: 9%; top: 420px; z-index: 5; display: flex; align-items: center; justify-content: center; width: 128px; height: 128px; border-radius: 50%; background: #570110; color: #FFFFFF; font-size: 16px; font-weight: 700; line-height: 1.2; text-align: center; text-decoration: none">Écrivez-<br>moi</a>
+  </header>
+
+  <!-- PROJETS : juste après le hero (motif « hero puis grille ») -->
+  <section id="projets" aria-labelledby="v5-proj" class="v5-light" style="background: #F3F2EE; color: #140508">
+    <div class="v5-wrap" style="padding: 112px 8% 120px">
+      <div class="v5-stack" style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px; align-items: end">
+        <h2 id="v5-proj" class="v5-big" style="margin: 0; font-size: 96px; font-weight: 800; line-height: .82; text-transform: uppercase; font-variation-settings: 'wdth' 62">Projets</h2>
+        <p style="max-width: 30em; margin: 0; font-size: 16px; line-height: 1.6; color: #55524D">{{projIntro}}</p>
+      </div>
+      <div role="group" aria-label="Filtrer les projets par secteur" style="display: flex; flex-wrap: wrap; gap: 8px; margin: 40px 0 48px">
+        <sc-region name="filters"><sc-for list="{{filters}}" as="f">
+          <button type="button" aria-pressed="{{f.pressed}}" onClick="{{f.pick}}" style="min-height: 44px; padding: 0 16px; border: 1.5px solid {{f.border}}; background: {{f.bg}}; color: {{f.fg}}; font-family: inherit; font-size: 16px; font-weight: 600; cursor: pointer">{{f.label}} <span style="opacity: .7">{{f.count}}</span></button>
+        </sc-for></sc-region>
+      </div>
+      <div class="v5-stack v7-cg" id="v-cards" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px 32px">
+        <sc-region name="cards"><sc-for list="{{cards}}" as="c">
+          <button type="button" onClick="{{c.open}}" class="v5-card" aria-label="{{c.aria}}" style="display: flex; flex-direction: column; gap: 16px; padding: 0; border: 0; background: none; color: #140508; font-family: inherit; text-align: left; cursor: pointer">
+            <span class="v7-cg-media" style="position: relative; display: block; width: 100%; overflow: hidden; aspect-ratio: 16 / 10; background: #E6E4DF">
+              <sc-if value="{{c.hasImg}}">
+                <img class="v7-cg-mono" src="{{c.img}}" alt="" loading="lazy" width="1280" height="800" style="display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left">
+                <img class="v7-cg-color" src="{{c.img}}" alt="" loading="lazy" width="1280" height="800" style="position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left">
+                <span aria-hidden="true" class="v7-cg-glow"></span>
+              </sc-if>
+              <sc-if value="{{c.noImg}}">
+                <span style="position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 24px; background: #570110; color: #FFFFFF">
+                  <span style="font-size: 14px; color: #F0DADD">{{c.coverNote}}</span>
+                  <span style="font-size: 96px; font-weight: 800; line-height: .82; font-variation-settings: 'wdth' 62">{{c.sys}}</span>
+                </span>
+              </sc-if>
+              <span style="position: absolute; top: 12px; left: 12px; display: flex; gap: 6px">
+                <span style="padding: 4px 10px; background: #F3F2EE; color: #140508; font-size: 14px; font-weight: 600">{{c.sector}}</span>
+                <span style="padding: 4px 10px; background: #140508; color: #F3F2EE; font-size: 14px; font-weight: 600">{{c.tech}}</span>
+              </span>
+            </span>
+            <span style="display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; width: 100%">
+              <span style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+                <span style="display: flex; gap: 10px; font-size: 14px; font-weight: 600; color: #55524D"><span>{{c.sys}}</span><span>{{c.status}}</span></span>
+                <span class="v7-card-title" style="font-size: 40px; font-weight: 800; line-height: .92; text-transform: uppercase; font-variation-settings: 'wdth' 62">{{c.title}}</span>
+              </span>
+              <span aria-hidden="true" class="v5-go" style="flex: none; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border: 1.5px solid #140508; transition: background-color .15s ease, color .15s ease">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12L12 4M5 4h7v7"></path></svg>
+              </span>
+            </span>
+          </button>
+        </sc-for></sc-region>
+      </div>
+      <sc-region name="more"><sc-if value="{{showMore}}">
+        <div style="margin-top: 64px">
+          <button type="button" onClick="{{toggleAll}}" class="v5-btn v5-btn-solid" style="min-height: 52px; padding: 0 28px; border: 0; background: #570110; color: #FFFFFF; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">{{moreLabel}}</button>
+        </div>
+      </sc-if></sc-region>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="services" aria-labelledby="v5-svc" class="v5-wrap v5-stack" style="display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 56px; padding: 120px 8%">
+    <h2 id="v5-svc" class="v5-big" style="margin: 0; font-size: 96px; font-weight: 800; line-height: .84; text-transform: uppercase; font-variation-settings: 'wdth' 62">Ce que je fais</h2>
+    <ul class="v5-stack" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 112px 40px; margin: 0; padding: 0; list-style: none">
+      <sc-for list="{{services}}" as="sv">
+        <li style="display: flex; flex-direction: column; gap: 14px">
+          <h3 style="margin: 0; font-size: 40px; font-weight: 800; line-height: .9; text-transform: uppercase; font-variation-settings: 'wdth' 62">{{sv.title}}</h3>
+          <p style="max-width: 28em; margin: 0; font-size: 16px; line-height: 1.6; color: #C9C4BE">{{sv.desc}}</p>
+          <ul aria-label="Outils" style="display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 0; padding: 0; list-style: none">
+            <sc-for list="{{sv.tools}}" as="t"><li style="padding: 4px 10px; background: #2A1015; font-size: 14px; color: #E6E1DB">{{t}}</li></sc-for>
+          </ul>
+        </li>
+      </sc-for>
+    </ul>
+  </section>
+
+  <!-- À PROPOS -->
+  <section aria-labelledby="v5-about" class="v5-wrap v5-stack" style="display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 72px; padding: 0 8% 120px; align-items: center">
+    <div style="position: relative; padding: 0 0 24px 24px">
+      <div aria-hidden="true" style="position: absolute; left: 0; bottom: 0; width: 70%; height: 70%; background: #570110"></div>
+      <img src="/img/about.webp" alt="Mattéo Berthelot en veste sombre, portrait en noir et blanc" loading="lazy" width="600" height="768" style="position: relative; display: block; width: 100%; height: auto; aspect-ratio: 25 / 32; object-fit: cover">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <h2 id="v5-about" class="v5-big" style="margin: 0; font-size: 96px; font-weight: 800; line-height: .84; text-transform: uppercase; font-variation-settings: 'wdth' 62">À propos</h2>
+      <p style="max-width: 34em; margin: 0; font-size: 16px; line-height: 1.7; color: #C9C4BE">Data Analyst spécialisé en performance social media et web analytics. J’exploite les données pour produire des analyses utiles à la décision, comprendre les parcours utilisateurs et automatiser les processus de reporting. Mastère Management, Data &amp; IA en cours, avec un intérêt particulier pour l’automatisation appuyée sur l’IA.</p>
+      <dl style="display: flex; flex-direction: column; margin: 8px 0 0">
+        <sc-for list="{{skills}}" as="sk">
+          <div class="v5-stack" style="display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; padding: 12px 0">
+            <dt style="font-size: 16px; font-weight: 700">{{sk.label}}</dt>
+            <dd style="margin: 0; font-size: 16px; color: #C9C4BE">{{sk.items}}</dd>
+          </div>
+        </sc-for>
+      </dl>
+    </div>
+  </section>
+
+  <!-- PARCOURS -->
+  <section id="parcours" aria-labelledby="v5-par" class="v5-light" style="background: #F3F2EE; color: #140508">
+    <div class="v5-wrap" style="padding: 112px 8% 120px">
+      <h2 id="v5-par" class="v5-big" style="margin: 0 0 48px; font-size: 96px; font-weight: 800; line-height: .82; text-transform: uppercase; font-variation-settings: 'wdth' 62">Parcours</h2>
+      <table style="width: 100%; border-collapse: collapse">
+        <caption class="v7-sr">Parcours : établissement, période, rôle</caption>
+        <thead class="v7-sr"><tr><th scope="col">Établissement</th><th scope="col">Période</th><th scope="col">Rôle ou diplôme</th></tr></thead>
+        <tbody>
+          <sc-for list="{{timeline}}" as="tl">
+            <tr style="border-top: 1px solid #D6D3CD">
+              <th scope="row" style="width: 42%; padding: 22px 24px 22px 0; font-size: 40px; font-weight: 800; line-height: .95; text-align: left; text-transform: uppercase; vertical-align: baseline; font-variation-settings: 'wdth' 62">{{tl.org}}</th>
+              <td style="width: 150px; padding: 22px 24px 22px 32px; font-size: 16px; font-weight: 600; color: #55524D; vertical-align: baseline">{{tl.when}}</td>
+              <td style="padding: 22px 0; font-size: 16px; line-height: 1.5; color: #3A3734; vertical-align: baseline">{{tl.what}}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- CONSULTING + QUESTIONS -->
+  <section id="consulting" aria-labelledby="v5-cons" class="v5-wrap v5-stack" style="display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 72px; padding: 120px 8%">
+    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 24px">
+      <h2 id="v5-cons" class="v5-big" style="margin: 0; font-size: 96px; font-weight: 800; line-height: .84; text-transform: uppercase; font-variation-settings: 'wdth' 62">Consulting</h2>
+      <p style="max-width: 30em; margin: 0; font-size: 16px; line-height: 1.65; color: #C9C4BE">J’accompagne les marques et les agences sur deux sujets : comprendre la performance de leurs réseaux sociaux et automatiser les reportings qui en découlent.</p>
+      <a href="mailto:mvtte0@proton.me?subject=Consulting" class="v5-btn v5-btn-solid" style="display: inline-flex; align-items: center; min-height: 52px; padding: 0 24px; background: #570110; color: #FFFFFF; font-size: 16px; font-weight: 700; text-decoration: none">Décrire mon besoin par mail</a>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <sc-region name="faq"><sc-for list="{{faq}}" as="q">
+        <div style="padding: 0 20px; background: #1E0B0F">
+          <h3 style="margin: 0">
+            <button type="button" onClick="{{q.toggle}}" aria-expanded="{{q.expanded}}" style="display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%; min-height: 68px; padding: 0; border: 0; background: none; color: #F3F2EE; font-family: inherit; font-size: 20px; font-weight: 700; text-align: left; cursor: pointer">{{q.q}}
+              <span aria-hidden="true" style="flex: none; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; background: {{q.signBg}}; font-size: 20px; font-weight: 400">{{q.sign}}</span>
+            </button>
+          </h3>
+          <sc-if value="{{q.open}}">
+            <p style="max-width: 36em; margin: 0; padding: 0 0 22px; font-size: 16px; line-height: 1.6; color: #C9C4BE">{{q.a}}</p>
+          </sc-if>
+        </div>
+      </sc-for></sc-region>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact" aria-labelledby="v5-cta" style="position: relative; overflow: hidden; background: #570110; color: #FFFFFF">
+    <div class="v5-wrap" style="position: relative; padding: 112px 8% 96px; text-align: center">
+      <h2 id="v5-cta" class="v5-big" style="margin: 0; font-size: 11.2vw; font-weight: 800; line-height: .82; text-transform: uppercase; white-space: nowrap; font-variation-settings: 'wdth' 62">Parlons données</h2>
+      <a href="mailto:mvtte0@proton.me" class="v5-badge v7-magnet v7-contact-badge" data-magnet="90" style="position: absolute; right: 7%; bottom: 28px; display: flex; align-items: center; justify-content: center; width: 140px; height: 140px; border-radius: 50%; background: #F3F2EE; color: #570110; font-size: 16px; font-weight: 800; line-height: 1.2; text-decoration: none">Écrire<br>un mail</a>
+      <p style="margin: 40px 0 0; font-size: 40px; font-weight: 700"><a href="mailto:mvtte0@proton.me" style="color: #FFFFFF; text-underline-offset: 6px">mvtte0@proton.me</a></p>
+    </div>
+  </section>
+
+  <footer class="v5-wrap v5-stack" style="display: grid; grid-template-columns: minmax(0, 6fr) repeat(2, minmax(0, 3fr)); gap: 40px; padding: 72px 8% 32px">
+    <nav aria-label="Pied de page" style="display: flex; flex-direction: column">
+      <a href="#top" style="font-size: 40px; font-weight: 800; line-height: 1.15; text-transform: uppercase; text-decoration: none; font-variation-settings: 'wdth' 62">Accueil</a>
+      <a href="#projets" style="font-size: 40px; font-weight: 800; line-height: 1.15; text-transform: uppercase; text-decoration: none; font-variation-settings: 'wdth' 62">Projets</a>
+      <a href="#services" style="font-size: 40px; font-weight: 800; line-height: 1.15; text-transform: uppercase; text-decoration: none; font-variation-settings: 'wdth' 62">Services</a>
+      <a href="#parcours" style="font-size: 40px; font-weight: 800; line-height: 1.15; text-transform: uppercase; text-decoration: none; font-variation-settings: 'wdth' 62">Parcours</a>
+      <a href="#consulting" style="font-size: 40px; font-weight: 800; line-height: 1.15; text-transform: uppercase; text-decoration: none; font-variation-settings: 'wdth' 62">Consulting</a>
+    </nav>
+    <div style="display: flex; flex-direction: column; gap: 4px; font-size: 16px">
+      <h2 style="margin: 0 0 8px; font-size: 16px; font-weight: 700; color: #8C8881">Ailleurs</h2>
+      <a href="https://linkedin.com/in/mvtte0" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; min-height: 36px">LinkedIn</a>
+      <a href="https://github.com/Mvtteo" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; min-height: 36px">GitHub</a>
+      <a href="/cv-matteo-berthelot.pdf" target="_blank" rel="noopener noreferrer" style="display: flex; align-items: center; min-height: 36px">CV (PDF)</a>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px; font-size: 16px">
+      <h2 style="margin: 0 0 8px; font-size: 16px; font-weight: 700; color: #8C8881">Contact</h2>
+      <span style="display: flex; align-items: center; min-height: 36px">Paris</span>
+      <a href="mailto:mvtte0@proton.me" style="display: flex; align-items: center; min-height: 36px">mvtte0@proton.me</a>
+    </div>
+    <div style="grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 16px; padding-top: 40px; font-size: 14px; color: #8C8881">
+      <span>© 2026 Mattéo Berthelot</span><a href="#top" style="color: #C9C4BE">Retour en haut</a>
+    </div>
+  </footer>
+
+  <sc-region name="overlay"><!-- MENU -->
+  <sc-if value="{{menuOpen}}">
+    <div role="dialog" aria-modal="true" aria-label="Menu" style="position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; background: #140508">
+      <div style="display: flex; justify-content: space-between; align-items: center; height: 80px; padding: 0 8%">
+        <span style="font-size: 40px; font-weight: 800; text-transform: uppercase; font-variation-settings: 'wdth' 62">Mattéo<span style="color: #8C8881">.B</span></span>
+        <button type="button" onClick="{{closeMenu}}" aria-label="Fermer le menu" style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 0; background: #570110; color: #FFFFFF; cursor: pointer"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"></path></svg></button>
+      </div>
+      <nav aria-label="Sections" style="flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 8%">
+        <sc-for list="{{menuItems}}" as="m">
+          <a href="{{m.href}}" onClick="{{closeMenu}}" class="v7-menu-link" style="display: block; padding: 6px 0; border-bottom: 1px solid #3A2226; font-size: 96px; font-weight: 800; line-height: 1; text-transform: uppercase; text-decoration: none; font-variation-settings: 'wdth' 62">{{m.label}}</a>
+        </sc-for>
+      </nav>
+    </div>
+  </sc-if>
+
+  <!-- FICHE PROJET -->
+  <sc-if value="{{ficheOpen}}">
+    <div style="position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 32px; box-sizing: border-box; background: rgba(10,2,4,.72)">
+      <button type="button" onClick="{{closeFiche}}" aria-label="Fermer la fiche" tabindex="-1" style="position: absolute; inset: 0; border: 0; background: transparent; cursor: default"></button>
+      <section role="dialog" aria-modal="true" aria-labelledby="v5-fiche-title" class="v5-stack" style="position: relative; display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); width: 100%; max-width: 1180px; max-height: 100%; overflow: auto; background: #1E0B0F; border: 1px solid #3A2226">
+        <div style="position: relative; background: #140508">
+          <sc-if value="{{cur.hasImg}}">
+            <img src="{{cur.img}}" alt="{{cur.imgAlt}}" width="1280" height="800" style="display: block; width: 100%; height: 100%; min-height: 420px; object-fit: cover; object-position: top left">
+          </sc-if>
+          <sc-if value="{{cur.noImg}}">
+            <div role="img" aria-label="Aperçu indisponible" style="display: flex; flex-direction: column; justify-content: space-between; height: 100%; min-height: 420px; padding: 32px; box-sizing: border-box; background: #570110">
+              <span style="font-size: 16px; color: #F0DADD">{{cur.coverNote}}</span>
+              <span style="font-size: 96px; font-weight: 800; line-height: .8; color: #FFFFFF; font-variation-settings: 'wdth' 62">{{cur.sys}}</span>
+            </div>
+          </sc-if>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 18px; padding: 28px 32px">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px">
+            <span style="display: flex; gap: 10px; font-size: 14px; font-weight: 600; color: #C9C4BE"><span>{{cur.sys}}</span><span>{{cur.sector}}</span></span>
+            <button type="button" onClick="{{closeFiche}}" aria-label="Fermer la fiche" style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 0; background: #570110; color: #FFFFFF; cursor: pointer"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"></path></svg></button>
+          </div>
+          <h2 id="v5-fiche-title" style="margin: 0; font-size: 40px; font-weight: 800; line-height: .88; text-transform: uppercase; font-variation-settings: 'wdth' 62">{{cur.title}}</h2>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <span style="padding: 5px 10px; border: 1.5px {{cur.statusBorder}} #F3F2EE; background: {{cur.statusBg}}; color: {{cur.statusFg}}; font-size: 14px; font-weight: 600">{{cur.status}}</span>
+            <sc-if value="{{cur.hasNote}}"><span style="padding: 5px 10px; border: 1.5px dashed #8C8881; font-size: 14px; color: #C9C4BE">{{cur.note}}</span></sc-if>
+          </div>
+          <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #DCD7D1">{{cur.desc}}</p>
+          <ul aria-label="Technologies" style="display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none">
+            <sc-for list="{{cur.tech}}" as="t"><li style="padding: 5px 10px; background: #2A1015; font-size: 14px">{{t}}</li></sc-for>
+          </ul>
+          <p style="display: flex; justify-content: space-between; margin: 0; padding: 12px 14px; background: #2A1015; font-size: 14px"><span style="color: #8C8881">{{cur.metaLabel}}</span><span>{{cur.metaValue}}</span></p>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px">
+            <sc-if value="{{cur.hasDemo}}"><a href="{{cur.demo}}" target="_blank" rel="noopener noreferrer" class="v5-btn v5-btn-solid" style="display: inline-flex; align-items: center; min-height: 48px; padding: 0 20px; background: #570110; color: #FFFFFF; font-size: 16px; font-weight: 700; text-decoration: none">Ouvrir la démo</a></sc-if>
+            <sc-if value="{{cur.hasRepo}}"><a href="{{cur.repo}}" target="_blank" rel="noopener noreferrer" class="v5-btn v5-btn-line" style="display: inline-flex; align-items: center; min-height: 48px; padding: 0 20px; border: 1.5px solid #F3F2EE; font-size: 16px; font-weight: 700; text-decoration: none">Voir le code sur GitHub</a></sc-if>
+          </div>
+          <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #A9A39D">{{cur.linkNote}}</p>
+          <div style="display: flex; justify-content: space-between; gap: 12px; margin-top: auto">
+            <button type="button" onClick="{{prev}}" style="display: flex; flex-direction: column; align-items: flex-start; min-height: 48px; padding: 0; border: 0; background: none; color: #F3F2EE; font-family: inherit; text-align: left; cursor: pointer"><span style="font-size: 14px; color: #8C8881">Projet précédent</span><span style="font-size: 16px; font-weight: 700">{{prevP.short}}</span></button>
+            <button type="button" onClick="{{next}}" style="display: flex; flex-direction: column; align-items: flex-end; min-height: 48px; padding: 0; border: 0; background: none; color: #F3F2EE; font-family: inherit; text-align: right; cursor: pointer"><span style="font-size: 14px; color: #8C8881">Projet suivant</span><span style="font-size: 16px; font-weight: 700">{{nextP.short}}</span></button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </sc-if></sc-region>
+</div>
