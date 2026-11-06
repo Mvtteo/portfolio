@@ -1,9 +1,9 @@
 # Mattéo Berthelot — portfolio
 
-Portfolio de Mattéo Berthelot, Data Analyst (V5+). Page unique en HTML/CSS/JS sans framework, construite avec Vite.
-Effets portés de React Bits (reactbits.dev, MIT + Commons Clause) en JavaScript : Topography (relief WebGL2 du hero),
-TextPressure (nom), ChromaGrid (captures des projets), Magnet (pastilles). L'ancienne version « Data Orbit » reste
-dans l'historique git (jusqu'au merge de la PR #4).
+Portfolio de Mattéo Berthelot, Data Analyst (V9 « Cobalt »). Page unique en HTML/CSS/JS sans framework, construite avec Vite.
+Thème sombre par défaut, thème clair au choix (mémorisé dans le navigateur). Polices Geist et Geist Mono (Google Fonts).
+Le portrait du hero et le visuel du contact ont été générés avec Higgsfield à partir d'une photo de Mattéo ; l'image
+« scan » est un montage fait à partir de la photo d'origine.
 
 ```bash
 npm install
@@ -14,11 +14,10 @@ npm run lint
 
 ## Organisation
 
-- `src/page.html` : gabarit de la page (trous `{{…}}`, `<sc-for>`, `<sc-if>`, `<sc-region>` re-rendues à chaque changement d'état) ;
-- `src/main.js` : moteur de gabarit, état (filtres, fiche projet, menu, FAQ) et montage des effets ;
-- `src/data.js` : projets, services, parcours, FAQ ;
-- `src/topography.js`, `src/fx.js` : effets ; `src/styles.css` : styles ;
-- `public/img/` : portrait, photo « À propos », captures des projets.
+- `src/tpl/page.html` : gabarit (trous `{{…}}`, `<sc-for>`, `<sc-if>`, `<sc-region>` re-rendues quand le filtre change) ;
+- `src/engine.js` : moteur de gabarit ; `src/main.js` : valeurs de la page, filtre par domaine, thème ;
+- `src/data.js` : projets, domaines, parcours ;
+- `public/img/` : hero, scan, contact, captures des projets ; `public/favicon.ico` : monogramme MB.
 
 ## Déploiement (Railway, mvtteo.fr)
 

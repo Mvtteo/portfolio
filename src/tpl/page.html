@@ -1,0 +1,119 @@
+<div class="v9" id="v9-root">
+  <a href="#v9-main" class="v9-skip">Aller au contenu</a>
+
+  <!-- HERO : portrait plein cadre, titre, vignettes de projets -->
+  <header class="v9-hero" id="v9-top">
+    <img class="v9-hero-img" src="/img/hero.webp" alt="" width="2400" height="1340" fetchpriority="high">
+    <div class="v9-hero-shade" aria-hidden="true"></div>
+    <nav class="v9-bar" aria-label="Navigation principale">
+      <a href="#v9-top" class="v9-logo" aria-label="Mattéo Berthelot, haut de page">M<span>·</span>B</a>
+      <p class="v9-bar-item"><span>Data Analyst</span>Razorfish (Publicis)</p>
+      <p class="v9-bar-item"><span>Basé à</span>Paris</p>
+      <div class="v9-bar-end">
+        <a href="#projets" class="v9-bar-link">Projets</a>
+        <a href="#parcours" class="v9-bar-link">Parcours</a>
+        <a href="#contact" class="v9-bar-link">Contact</a>
+        <button type="button" class="v9-theme" id="v9-theme" aria-label="Passer en thème clair" aria-pressed="false">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="currentColor" stroke="none"></path></svg>
+        </button>
+      </div>
+    </nav>
+        <div class="v9-hero-text" id="v9-main">
+      <span class="v9-plus" aria-hidden="true">+</span>
+      <h1 class="v9-h1">Mesurer,<br>puis automatiser.</h1>
+      <p class="v9-lead">Mattéo Berthelot, Data Analyst à Paris. J’analyse la performance social media et web, et j’automatise les reportings en Python.</p>
+      <div class="v9-ctas">
+        <a href="#projets" class="v9-btn v9-btn-solid">Voir les projets</a>
+        <a href="/cv-matteo-berthelot.pdf" target="_blank" rel="noopener noreferrer" class="v9-btn v9-btn-glass">CV (PDF) ↗</a>
+      </div>
+    </div>
+    <ul class="v9-thumbs" aria-label="Projets à la une">
+      <sc-for list="{{thumbs}}" as="t">
+        <li><a href="{{t.href}}" target="_blank" rel="noopener noreferrer" class="v9-thumb" aria-label="{{t.aria}}"><span class="v9-thumb-top"><em>{{t.sys}}</em><em>{{t.go}}</em></span><strong>{{t.title}}</strong><span class="v9-thumb-sub">{{t.sector}}</span></a></li>
+      </sc-for>
+      <li class="v9-thumb-card">
+        <p class="v9-thumb-k">Sélection</p>
+        <p class="v9-thumb-n">{{featuredTotal}} projets</p>
+        <p class="v9-thumb-s">Data · IA &amp; automation · Outils</p>
+        <a href="#projets" class="v9-thumb-go" aria-label="Aller à la liste des projets">+</a>
+      </li>
+    </ul>
+  </header>
+
+  <main>
+    <!-- SECTION NOIRE : portrait scanné et chiffres réels -->
+    <section class="v9-dark-sec" aria-labelledby="v9-h-num">
+      <h2 id="v9-h-num" class="v9-sr">En chiffres</h2>
+      <div class="v9-scan"><img src="/img/scan.webp" alt="Portrait de Mattéo Berthelot découpé en bandes horizontales, comme scanné ligne par ligne" width="1600" height="1195" loading="lazy"></div>
+      <div class="v9-stats">
+        <sc-for list="{{stats}}" as="st">
+          <div class="v9-stat"><span class="v9-plus" aria-hidden="true">+</span><strong>{{st.n}}</strong><span>{{st.label}}</span></div>
+        </sc-for>
+        <div class="v9-stat v9-stat-wide">
+          <span class="v9-plus" aria-hidden="true">+</span>
+          <p class="v9-stack-k">Les plus utilisées</p>
+          <ul class="v9-stack"><sc-for list="{{topTech}}" as="tt"><li>{{tt.tech}}<em>{{tt.n}}</em></li></sc-for></ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROJETS -->
+    <section id="projets" class="v9-sec" aria-labelledby="v9-h-proj">
+      <div class="v9-sec-head">
+        <h2 id="v9-h-proj" class="v9-h2">Projets</h2>
+        <div class="v9-filters" role="group" aria-label="Filtrer par domaine">
+          <sc-region name="filters"><sc-for list="{{filters}}" as="f">
+            <button type="button" class="v9-chip" aria-pressed="{{f.pressed}}" onClick="{{f.pick}}">{{f.label}} <em>{{f.count}}</em></button>
+          </sc-for></sc-region>
+        </div>
+      </div>
+      <ul class="v9-table" aria-label="Liste des projets">
+        <sc-region name="table"><sc-for list="{{tableRows}}" as="p">
+          <li class="v9-trow">
+            <span class="v9-mono v9-dim">{{p.sys}}</span>
+            <span class="v9-trow-title">{{p.title}}<small>{{p.desc}}</small></span>
+            <span class="v9-mono v9-dim v9-hide-m">{{p.tech}}</span>
+            <span class="v9-trow-links">
+              <sc-if value="{{p.demo}}"><a href="{{p.demo}}" target="_blank" rel="noopener noreferrer" aria-label="{{p.demoAria}}">Démo ↗</a></sc-if>
+              <sc-if value="{{p.repo}}"><a href="{{p.repo}}" target="_blank" rel="noopener noreferrer" aria-label="{{p.repoAria}}">Code ↗</a></sc-if>
+              <sc-if value="{{p.noLink}}"><span class="v9-dim">Sur le CV</span></sc-if>
+            </span>
+            <span class="v9-mono v9-dim v9-hide-m v9-al-r">{{p.when}}</span>
+          </li>
+        </sc-for></sc-region>
+      </ul>
+    </section>
+
+    <!-- PARCOURS -->
+    <section id="parcours" class="v9-sec" aria-labelledby="v9-h-par">
+      <div class="v9-sec-head"><h2 id="v9-h-par" class="v9-h2">Parcours</h2></div>
+      <div class="v9-par">
+        <sc-for list="{{tracks}}" as="tr">
+          <div>
+            <h3 class="v9-mono v9-dim">{{tr.label}}</h3>
+            <ul class="v9-plist">
+              <sc-for list="{{tr.items}}" as="tl">
+                <li><span class="v9-plist-org">{{tl.org}}<small>{{tl.what}}</small></span><span class="v9-mono v9-dim">{{tl.when}}</span></li>
+              </sc-for>
+            </ul>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </main>
+
+  <!-- CONTACT : mur cobalt et faisceau projeté -->
+  <footer id="contact" class="v9-contact" aria-labelledby="v9-h-ct">
+    <img class="v9-contact-img" src="/img/contact.webp" alt="" width="2400" height="1340" loading="lazy">
+    <div class="v9-contact-in">
+      <h2 id="v9-h-ct" class="v9-mono">Contact</h2>
+      <a href="mailto:mvtte0@proton.me" class="v9-mail">mvtte0@proton.me</a>
+      <div class="v9-contact-links">
+        <a href="https://linkedin.com/in/mvtte0" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
+        <a href="https://github.com/Mvtteo" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+        <a href="/cv-matteo-berthelot.pdf" target="_blank" rel="noopener noreferrer">CV ↗</a>
+      </div>
+      <div class="v9-foot"><span>© 2026 Mattéo Berthelot</span><a href="#v9-top">Haut de page ↑</a></div>
+    </div>
+  </footer>
+</div>
