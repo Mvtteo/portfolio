@@ -2,6 +2,7 @@ import './styles.css';
 import pageTpl from './tpl/page.html?raw';
 import { PROJECTS, SECT, TIMELINE } from './data.js';
 import { render, renderRegion, startRoot } from './engine.js';
+import { startMotion, watchReveals } from './motion.js';
 
 const SECTOR_ORDER = ['data', 'ia', 'web', 'outils'];
 const THUMB_IDS = ['forensic', 'impressions-er', 'faim', 'dofus', 'spotify'];
@@ -26,14 +27,14 @@ function vals() {
     projectTotal: PROJECTS.length,
     demoTotal: demos,
     featuredTotal: PROJECTS.filter((p) => p.featured).length,
-    thumbs: thumbs.map((p) => ({
-      sys: p.sys, title: p.title, sector: SECT[p.sector], go: p.demo ? 'Démo ↗' : 'Code ↗',
+    thumbs: thumbs.map((p, i) => ({
+      i: 5 + i, sys: p.sys, title: p.title, sector: SECT[p.sector], go: p.demo ? 'Démo ↗' : 'Code ↗',
       href: p.demo || p.repo || '#projets', aria: p.title + ', ' + (p.demo ? 'démo' : 'code') + ' (nouvel onglet)'
     })),
     stats: [
-      { n: PROJECTS.length, label: 'projets publiés ou sur le CV' },
-      { n: demos, label: 'démos en ligne' },
-      { n: Object.keys(techCount).length, label: 'technologies utilisées' }
+      { i: 0, n: PROJECTS.length, label: 'projets publiés ou sur le CV' },
+      { i: 1, n: demos, label: 'démos en ligne' },
+      { i: 2, n: Object.keys(techCount).length, label: 'technologies utilisées' }
     ],
     topTech: Object.entries(techCount).sort((a, b) => b[1] - a[1]).slice(0, TOP_TECH_COUNT).map(([tech, n]) => ({ tech, n })),
     filters: [['all', 'Tous']].concat(SECTOR_ORDER.map((k) => [k, SECT[k]])).map(([k, label]) => ({
@@ -42,16 +43,16 @@ function vals() {
       pressed: state.sector === k ? 'true' : 'false',
       pick: () => setState({ sector: k })
     })),
-    tableRows: PROJECTS.filter((p) => state.sector === 'all' || p.sector === state.sector).map((p) => ({
-      sys: p.sys, title: p.title, desc: p.desc,
+    tableRows: PROJECTS.filter((p) => state.sector === 'all' || p.sector === state.sector).map((p, i) => ({
+      i: Math.min(i, 6), sys: p.sys, title: p.title, desc: p.desc,
       tech: p.tech.slice(0, 3).join(' · ') || '—',
       demo: p.demo || '', repo: p.repo || '', noLink: !p.demo && !p.repo,
       demoAria: 'Démo de ' + p.title + ' (nouvel onglet)', repoAria: 'Code de ' + p.title + ' (nouvel onglet)',
       when: p.meta[0] === 'SOURCE' ? '' : p.meta[1].toLowerCase()
     })),
     tracks: [
-      { label: 'Expérience', items: TIMELINE.filter((t) => t.kind === 'pro') },
-      { label: 'Formation', items: TIMELINE.filter((t) => t.kind === 'edu') }
+      { label: 'Expérience', items: TIMELINE.filter((t) => t.kind === 'pro').map((t, i) => ({ ...t, i })) },
+      { label: 'Formation', items: TIMELINE.filter((t) => t.kind === 'edu').map((t, i) => ({ ...t, i })) }
     ]
   };
 }
@@ -63,6 +64,7 @@ function setState(patch) {
   document.querySelectorAll('[data-region]').forEach((el) => { el.innerHTML = renderRegion(el.dataset.region, v); });
   const restore = focusId && document.querySelector('[data-h="' + focusId + '"]');
   if (restore) restore.focus();
+  watchReveals();
 }
 
 function applyTheme(theme) {
@@ -82,3 +84,4 @@ document.getElementById('v9-theme').addEventListener('click', () => {
   saveTheme(next);
 });
 if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
+startMotion();

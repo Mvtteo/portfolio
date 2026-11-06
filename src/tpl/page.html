@@ -3,7 +3,7 @@
 
   <!-- HERO : portrait plein cadre, titre, vignettes de projets -->
   <header class="v9-hero" id="v9-top">
-    <img class="v9-hero-img" src="/img/hero.webp" alt="" width="2400" height="1340" fetchpriority="high">
+    <img class="v9-hero-img" data-parallax="0.22" src="/img/hero.webp" alt="" width="2400" height="1340" fetchpriority="high">
     <div class="v9-hero-shade" aria-hidden="true"></div>
     <nav class="v9-bar" aria-label="Navigation principale">
       <a href="#v9-top" class="v9-logo" aria-label="Mattéo Berthelot, haut de page">M<span>·</span>B</a>
@@ -20,18 +20,18 @@
     </nav>
         <div class="v9-hero-text" id="v9-main">
       <span class="v9-plus" aria-hidden="true">+</span>
-      <h1 class="v9-h1">Mesurer,<br>puis automatiser.</h1>
-      <p class="v9-lead">Mattéo Berthelot, Data Analyst à Paris. J’analyse la performance social media et web, et j’automatise les reportings en Python.</p>
-      <div class="v9-ctas">
+      <h1 class="v9-h1" aria-label="Mesurer, puis automatiser."><span class="v9-line" aria-hidden="true"><span style="--i: 0">Mesurer,</span></span><span class="v9-line" aria-hidden="true"><span style="--i: 1">puis</span></span><span class="v9-line" aria-hidden="true"><span style="--i: 2">automatiser.</span></span></h1>
+      <p class="v9-lead mo-intro" style="--i: 3">Mattéo Berthelot, Data Analyst à Paris. J’analyse la performance social media et web, et j’automatise les reportings en Python.</p>
+      <div class="v9-ctas mo-intro" style="--i: 4">
         <a href="#projets" class="v9-btn v9-btn-solid">Voir les projets</a>
         <a href="/cv-matteo-berthelot.pdf" target="_blank" rel="noopener noreferrer" class="v9-btn v9-btn-glass">CV (PDF) ↗</a>
       </div>
     </div>
     <ul class="v9-thumbs" aria-label="Projets à la une">
       <sc-for list="{{thumbs}}" as="t">
-        <li><a href="{{t.href}}" target="_blank" rel="noopener noreferrer" class="v9-thumb" aria-label="{{t.aria}}"><span class="v9-thumb-top"><em>{{t.sys}}</em><em>{{t.go}}</em></span><strong>{{t.title}}</strong><span class="v9-thumb-sub">{{t.sector}}</span></a></li>
+        <li class="mo-intro" style="--i: {{t.i}}"><a href="{{t.href}}" target="_blank" rel="noopener noreferrer" class="v9-thumb" aria-label="{{t.aria}}"><span class="v9-thumb-top"><em>{{t.sys}}</em><em>{{t.go}}</em></span><strong>{{t.title}}</strong><span class="v9-thumb-sub">{{t.sector}}</span></a></li>
       </sc-for>
-      <li class="v9-thumb-card">
+      <li class="v9-thumb-card mo-intro" style="--i: 10">
         <p class="v9-thumb-k">Sélection</p>
         <p class="v9-thumb-n">{{featuredTotal}} projets</p>
         <p class="v9-thumb-s">Data · IA &amp; automation · Outils</p>
@@ -44,12 +44,12 @@
     <!-- SECTION NOIRE : portrait scanné et chiffres réels -->
     <section class="v9-dark-sec" aria-labelledby="v9-h-num">
       <h2 id="v9-h-num" class="v9-sr">En chiffres</h2>
-      <div class="v9-scan"><img src="/img/scan.webp" alt="Portrait de Mattéo Berthelot découpé en bandes horizontales, comme scanné ligne par ligne" width="1600" height="1195" loading="lazy"></div>
+      <div class="v9-scan mo-scan"><img src="/img/scan.webp" alt="Portrait de Mattéo Berthelot découpé en bandes horizontales, comme scanné ligne par ligne" width="1600" height="1195" loading="lazy"></div>
       <div class="v9-stats">
         <sc-for list="{{stats}}" as="st">
-          <div class="v9-stat"><span class="v9-plus" aria-hidden="true">+</span><strong>{{st.n}}</strong><span>{{st.label}}</span></div>
+          <div class="v9-stat mo-rv" style="--i: {{st.i}}"><span class="v9-plus" aria-hidden="true">+</span><strong data-count="{{st.n}}">{{st.n}}</strong><span>{{st.label}}</span></div>
         </sc-for>
-        <div class="v9-stat v9-stat-wide">
+        <div class="v9-stat v9-stat-wide mo-rv" style="--i: 3">
           <span class="v9-plus" aria-hidden="true">+</span>
           <p class="v9-stack-k">Les plus utilisées</p>
           <ul class="v9-stack"><sc-for list="{{topTech}}" as="tt"><li>{{tt.tech}}<em>{{tt.n}}</em></li></sc-for></ul>
@@ -60,8 +60,8 @@
     <!-- PROJETS -->
     <section id="projets" class="v9-sec" aria-labelledby="v9-h-proj">
       <div class="v9-sec-head">
-        <h2 id="v9-h-proj" class="v9-h2">Projets</h2>
-        <div class="v9-filters" role="group" aria-label="Filtrer par domaine">
+        <h2 id="v9-h-proj" class="v9-h2 mo-title"><span class="v9-line"><span>Projets</span></span></h2>
+        <div class="v9-filters mo-rv" style="--i: 2" role="group" aria-label="Filtrer par domaine">
           <sc-region name="filters"><sc-for list="{{filters}}" as="f">
             <button type="button" class="v9-chip" aria-pressed="{{f.pressed}}" onClick="{{f.pick}}">{{f.label}} <em>{{f.count}}</em></button>
           </sc-for></sc-region>
@@ -69,7 +69,7 @@
       </div>
       <ul class="v9-table" aria-label="Liste des projets">
         <sc-region name="table"><sc-for list="{{tableRows}}" as="p">
-          <li class="v9-trow">
+          <li class="v9-trow mo-rv" style="--i: {{p.i}}">
             <span class="v9-mono v9-dim">{{p.sys}}</span>
             <span class="v9-trow-title">{{p.title}}<small>{{p.desc}}</small></span>
             <span class="v9-mono v9-dim v9-hide-m">{{p.tech}}</span>
@@ -86,14 +86,14 @@
 
     <!-- PARCOURS -->
     <section id="parcours" class="v9-sec" aria-labelledby="v9-h-par">
-      <div class="v9-sec-head"><h2 id="v9-h-par" class="v9-h2">Parcours</h2></div>
+      <div class="v9-sec-head"><h2 id="v9-h-par" class="v9-h2 mo-title"><span class="v9-line"><span>Parcours</span></span></h2></div>
       <div class="v9-par">
         <sc-for list="{{tracks}}" as="tr">
           <div>
             <h3 class="v9-mono v9-dim">{{tr.label}}</h3>
             <ul class="v9-plist">
               <sc-for list="{{tr.items}}" as="tl">
-                <li><span class="v9-plist-org">{{tl.org}}<small>{{tl.what}}</small></span><span class="v9-mono v9-dim">{{tl.when}}</span></li>
+                <li class="mo-rv" style="--i: {{tl.i}}"><span class="v9-plist-org">{{tl.org}}<small>{{tl.what}}</small></span><span class="v9-mono v9-dim">{{tl.when}}</span></li>
               </sc-for>
             </ul>
           </div>
@@ -104,11 +104,11 @@
 
   <!-- CONTACT : mur cobalt et faisceau projeté -->
   <footer id="contact" class="v9-contact" aria-labelledby="v9-h-ct">
-    <img class="v9-contact-img" src="/img/contact.webp" alt="" width="2400" height="1340" loading="lazy">
+    <img class="v9-contact-img" data-parallax="-0.12" src="/img/contact.webp" alt="" width="2400" height="1340" loading="lazy">
     <div class="v9-contact-in">
       <h2 id="v9-h-ct" class="v9-mono">Contact</h2>
-      <a href="mailto:mvtte0@proton.me" class="v9-mail">mvtte0@proton.me</a>
-      <div class="v9-contact-links">
+      <a href="mailto:mvtte0@proton.me" class="v9-mail mo-title"><span class="v9-line"><span>mvtte0@proton.me</span></span></a>
+      <div class="v9-contact-links mo-rv" style="--i: 3">
         <a href="https://linkedin.com/in/mvtte0" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
         <a href="https://github.com/Mvtteo" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
         <a href="/cv-matteo-berthelot.pdf" target="_blank" rel="noopener noreferrer">CV ↗</a>
