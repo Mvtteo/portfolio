@@ -133,6 +133,7 @@ body:has(.v9-light){background:#F1F0EC}
   .v9-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
   .v9-stat{min-height:150px;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:14px;gap:6px}
   .v9-stat strong{font-size:44px}
+  .v9-stat-wide{padding-top:44px}
   .v9-sec{padding:72px 20px}
   .v9-h2{font-size:44px}
   .v9-trow{grid-template-columns:44px minmax(0,1fr);gap:6px 12px}
